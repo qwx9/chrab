@@ -1,7 +1,7 @@
 Dependencies
 ============
 
-Development and testing was done on an up-to-date Ubuntu Linux 19.04 instance.
+Development and testing was done on an up-to-date Ubuntu Linux 19.10 instance.
 
 
 Installation

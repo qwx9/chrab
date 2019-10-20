@@ -18,5 +18,5 @@ wget -nc 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa*'
 wget -nc ftp://ftp.ensembl.org/pub/grch37/release-98/regulation/homo_sapiens/homo_sapiens.GRCh37.Regulatory_Build.regulatory_features.20180925.gff.gz
 cd ..
 
-# encode files
+# download files specified in csv's, convert excel stuff
 Rscript init.R

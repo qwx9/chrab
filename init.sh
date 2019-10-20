@@ -14,8 +14,14 @@ cd hg19
 wget -nc 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa*'
 # hg19 promoters (fasta only, not really useful?)
 #wget -nc 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/upstream*gz'
-# hg19 ensembl regulation GFF: promoters and enhancers
-wget -nc ftp://ftp.ensembl.org/pub/grch37/release-98/regulation/homo_sapiens/homo_sapiens.GRCh37.Regulatory_Build.regulatory_features.20180925.gff.gz
+# hg19 ensembl regulation GFF, convert to BED and extract promoters and enhancers only
+if [[ ! -f hg19.promenh.20180925.bed ]]; then
+	wget -O - ftp://ftp.ensembl.org/pub/grch37/release-98/regulation/homo_sapiens/homo_sapiens.GRCh37.Regulatory_Build.regulatory_features.20180925.gff.gz \
+		| gunzip -c \
+		| gff2bed \
+		| grep 'promoter:\|enhancer:' \
+		> hg19.promenh.20180925.bed
+fi
 cd ..
 
 # download files specified in csv's, convert excel stuff

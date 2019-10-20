@@ -1,16 +1,22 @@
+Dependencies
+============
+
+Development and testing was done on an up-to-date Ubuntu Linux 19.04 instance.
+
+
 Installation
 ============
 
-Development was done on an up-to-date Ubuntu Linux 19.04 instance.
+To install project dependencies, run install.sh.
+To install development tools, run installtools.sh.
 
-Development tools:
-
-# apt install git igv
+To download used data, run init.sh.
 
 
-Dependencies:
+Files
+=====
 
-# apt install bedtools r-base-core
+encode.csv: files exported from ENCODE
 
 
 Used package versions

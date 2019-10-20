@@ -1,6 +1,6 @@
 #!/bin/bash
 # tree structure
-mkdir -p gf doc hg19 huvec imr90
+mkdir -p gf doc hg19 huvec imr90 cnt
 
 # documentation
 wget -nc https://www.encodeproject.org/documents/a4a6caad-61ab-4d35-820a-409cadce1121/@@download/attachment/RSEM_quantifications_specifications.txt -O doc/rnaseq.tsv.rsem.spec.txt

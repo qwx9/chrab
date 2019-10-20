@@ -10,7 +10,12 @@ if [[ ! -e hg19/README ]]; then
 	w3m -dump http://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/ >hg19/README
 fi
 cd hg19
+# hg19 sequence and repeatmasker output
 wget -nc 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa*'
+# hg19 promoters (fasta only, not really useful?)
+#wget -nc 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/upstream*gz'
+# hg19 ensembl regulation GFF: promoters and enhancers
+wget -nc ftp://ftp.ensembl.org/pub/grch37/release-98/regulation/homo_sapiens/homo_sapiens.GRCh37.Regulatory_Build.regulatory_features.20180925.gff.gz
 cd ..
 
 # encode files

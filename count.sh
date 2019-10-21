@@ -22,6 +22,11 @@ bedtools intersect -a huvec/dhs.rep1.bed.gz -b huvec/dhs.rep2.bed.gz >cnt/huvec.
 bedtools subtract -A -a cnt/huvec.dhs.bed -b huvec/h3k4me3.bed.gz huvec/h3k27ac.bed.gz >cnt/huvec.proa.open.bed
 # pro-A repseqs
 rep2bed '$4 > 0.04' >cnt/huvec.proa.repseq.bed
+# active genes list
+gunzip -c huvec/groseq.txt.gz |\
+	awk 'NR>1{printf("%s\t%s\t%s\t%s\n", $2, $3, $4, $5)}' |\
+	sort -k 1d,1 |\
+	uniq -d >cnt/huvec.proa.genes.bed
 
 # huvec pro-B
 bedtools subtract -A -a hg19/hg19.promenh.20180925.bed -b cnt/huvec.proa.prm.bed cnt/huvec.proa.open.bed >cnt/huvec.prob.prm.enh.bed

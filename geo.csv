@@ -1,0 +1,2 @@
+cell line,series,series url,assay,format,file url,file path
+huvec,GSE94872,https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=gse94872,GRO-seq,txt,https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE94872&format=file&file=GSE94872_HUVEC_GeneExpression_NormoxiaHypoxia.txt.gz,huvec/groseq.txt.gz

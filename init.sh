@@ -29,27 +29,3 @@ fi
 
 # download files specified in csv's, convert excel stuff
 Rscript init.R
-
-# extract pro-A repseqs
-awk '
-FNR == NR && NR > 1{
-	if($4 > 0.04)
-		s[$3] = ""
-}
-FNR != NR{
-	if($10 in s)
-		printf("%s\t%s\t%s\t%s\n", $5, $6, $7, $10)
-}
-' gf/huvec.repseq.tsv hg19/hg19.fa.out > cnt/huvec.repseq.proa.bed
-
-# extract pro-B repseqs
-awk '
-FNR == NR && NR > 1{
-	if($4 < -0.01)
-		s[$3] = ""
-}
-FNR != NR{
-	if($10 in s)
-		printf("%s\t%s\t%s\t%s\n", $5, $6, $7, $10)
-}
-' gf/huvec.repseq.tsv hg19/hg19.fa.out > cnt/huvec.repseq.prob.bed

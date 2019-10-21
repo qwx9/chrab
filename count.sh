@@ -13,6 +13,12 @@ rep2bed(){
 	' gf/huvec.repseq.tsv hg19/hg19.fa.out
 }
 
+# hg19 known genes
+gunzip -c hg19/hg19.refgene.txt.gz |\
+	awk '{printf("%s\t%s\t%s\t%s\n", $3, $5, $6, $4)}' |\
+	sort -k 1d,1 |\
+	uniq -d >cnt/hg19.refgene.bed
+
 # active promoters
 bedtools intersect -a huvec/h3k4me3.bed.gz -b huvec/h3k27ac.bed.gz >cnt/huvec.proa.prm.bed
 # active enhancers
@@ -42,6 +48,6 @@ bedtools makewindows -g hg19/hg19.txt -w 100000 >cnt/hg19w.txt
 
 # count all elements per 100kb window along hg19
 cd cnt
-for i in huvec.pro{a,b}.*.bed; do
+for i in hg19.refgene.bed huvec.pro{a,b}.*.bed; do
 	bedtools coverage -counts -a hg19w.txt -b $i >hg19w.cnt.$i
 done

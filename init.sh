@@ -1,9 +1,6 @@
 #!/bin/bash
 # tree structure
-mkdir -p gf doc hg19 huvec imr90 cnt
-
-# documentation
-wget -nc https://www.encodeproject.org/documents/a4a6caad-61ab-4d35-820a-409cadce1121/@@download/attachment/RSEM_quantifications_specifications.txt -O doc/rnaseq.tsv.rsem.spec.txt
+mkdir -p gf hg19 huvec imr90 cnt
 
 # hg19
 if [[ ! -e hg19/README ]]; then
@@ -17,6 +14,10 @@ fi
 # hg19 chromosome info (for windowing)
 if [[ ! -f hg19/hg19.txt ]]; then
 	mysql --user=genome --host=genome-mysql.cse.ucsc.edu -A -e "select chrom, size from hg19.chromInfo" >hg19/hg19.txt
+fi
+# hg19 known genes annotation
+if [[ ! -f hg19/hg19.refgene.txt.gz ]]; then
+	wget -nc -O hg19/hg19.refgene.txt.gz 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/database/refGene.txt.gz'
 fi
 # hg19 ensembl regulation GFF, convert to BED and extract promoters and enhancers only
 if [[ ! -f hg19/hg19.promenh.20180925.bed ]]; then

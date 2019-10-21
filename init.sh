@@ -10,8 +10,10 @@ if [[ ! -e hg19/README ]]; then
 	w3m -dump http://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/ >hg19/README
 fi
 cd hg19
-# hg19 sequence and repeatmasker output
-wget -nc 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa*'
+# hg19 repeatmasker output
+wget -nc 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa.out.gz'
+# hg19 chromosome info (for windowing)
+mysql --user=genome --host=genome-mysql.cse.ucsc.edu -A -e "select chrom, size from hg19.chromInfo" >hg19/hg19.txt
 # hg19 promoters (fasta only, not really useful?)
 #wget -nc 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/upstream*gz'
 # hg19 ensembl regulation GFF, convert to BED and extract promoters and enhancers only

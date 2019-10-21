@@ -26,7 +26,8 @@ rep2bed '$4 > 0.04' >cnt/huvec.proa.repseq.bed
 # huvec pro-B
 bedtools subtract -A -a hg19/hg19.promenh.20180925.bed -b cnt/huvec.proa.prm.bed cnt/huvec.proa.open.bed >cnt/huvec.prob.prm.enh.bed
 # pro-B repseqs
-rep2bed '$4 < -0.01' >cnt/huvec.prob.repseq.bed
+rep2bed '$4 < -0.01 && $1 == "LTR"' >cnt/huvec.prob.repseq.ltr.bed
+rep2bed '$4 < -0.01 && $1 != "LTR"' >cnt/huvec.prob.repseq.others.bed
 
 # split hg19 into 100kb windows
 bedtools makewindows -g hg19/hg19.txt -w 100000 >cnt/hg19w.txt

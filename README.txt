@@ -16,13 +16,28 @@ Installation
 To install project dependencies, run install.sh.
 To install development tools, run installtools.sh.
 
+
+Input data
+==========
+
+A certain number of input files are necessary to run the analysis.
+
+encode.csv: files to be exported from ENCODE, later used for counting (provided)
+gf/Kassiotis-List.ORI.RepSeq.CorrB-Fourel.11july.xlsx: RepBase repeat counts in hg19 and correlation to A/B profile
+gf/Table-AouBouAlways.xlsx: A/B profile for several cell lines
+
+
+Usage
+=====
+
 To create the directory tree and download/convert used data, run init.sh.
+
+To count elements along the reference genome, run count.sh.
 
 
 Files
 =====
 
-encode.csv: files exported from ENCODE
 *.R: R scripts for importing data, returning results and figures
 *.sh: bash scripts
 

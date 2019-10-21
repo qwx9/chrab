@@ -7,3 +7,14 @@ bedtools subtract -A -a cnt/huvec.dhs.bed -b huvec/h3k4me3.bed.gz huvec/h3k27ac.
 
 # huvec pro-B
 bedtools subtract -A -a hg19/hg19.promenh.20180925.bed -b cnt/huvec.prom.actif.bed cnt/huvec.prom.enh.open.bed >cnt/huvec.prom.enh.inactif.bed
+
+# split hg19 into 100kb windows
+bedtools makewindows -g hg19/hg19.txt -w 100000 >cnt/hg19w.txt
+
+# count elements per 100kb window along hg19
+# pro-A
+bedtools coverage -counts -a cnt/hg19w.txt -b cnt/huvec.enh.actif.bed >cnt/huvec.hg19w.eact.cnt.bed
+bedtools coverage -counts -a cnt/hg19w.txt -b cnt/huvec.prom.actif.bed >cnt/huvec.hg19w.pact.cnt.bed
+bedtools coverage -counts -a cnt/hg19w.txt -b cnt/huvec.prom.enh.open.bed >cnt/huvec.hg19w.peopen.cnt.bed
+# pro-B
+bedtools coverage -counts -a cnt/hg19w.txt -b cnt/huvec.prom.enh.inactif.bed >cnt/huvec.hg19w.peinact.cnt.bed

@@ -1,6 +1,23 @@
-#!/bin/bash
+#!/bin/bash -e
+
+getchr(){
+	awk '
+	NR > 1{
+		a[$1]=""
+	}
+	END{
+		s=""
+		for(i in a)
+			if(s == "")
+				s = "\(" i
+			else
+				s = s "\|" i
+		print s "\)"
+	}' gf/ab.tsv
+}
+
 # tree structure
-mkdir -p gf hg19 huvec imr90 cnt
+mkdir -p gf hg19 huvec imr90 cnt plot
 
 # hg19
 if [[ ! -e hg19/README ]]; then
@@ -10,10 +27,6 @@ fi
 if [[ ! -f hg19/hg19.fa.out ]]; then
 	wget -nc -O hg19/hg19.fa.out.gz 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa.out.gz'
 	gunzip hg19/hg19.fa.out.gz
-fi
-# hg19 chromosome info (for windowing)
-if [[ ! -f hg19/hg19.txt ]]; then
-	mysql --user=genome --host=genome-mysql.cse.ucsc.edu -A -e "select chrom, size from hg19.chromInfo" >hg19/hg19.txt
 fi
 # hg19 known genes annotation
 if [[ ! -f hg19/hg19.refgene.txt.gz ]]; then
@@ -30,3 +43,10 @@ fi
 
 # download files specified in csv's, convert excel stuff
 Rscript init.R
+
+# hg19 chromosome info (for windowing), needs gf/ab.tsv to restrict chromosome names
+if [[ ! -f hg19/hg19.txt ]]; then
+	mysql --user=genome --host=genome-mysql.cse.ucsc.edu -A \
+		-e "select chrom, size from hg19.chromInfo" |\
+			grep "^`getchr`\\s" >hg19/hg19.txt
+fi

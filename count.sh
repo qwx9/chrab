@@ -57,8 +57,7 @@ bedtools intersect -a huvec/h3k4me3.bed.gz -b huvec/h3k27ac.bed.gz >cnt/huvec.pr
 # active enhancers
 bedtools subtract -A -a huvec/h3k4me3.bed.gz -b huvec/h3k27ac.bed.gz >cnt/huvec.proa.enh.bed
 # open promoters/enhancers
-bedtools intersect -a huvec/dhs.rep1.bed.gz -b huvec/dhs.rep2.bed.gz >cnt/huvec.dhs.bed
-bedtools subtract -A -a cnt/huvec.dhs.bed -b huvec/h3k4me3.bed.gz huvec/h3k27ac.bed.gz >cnt/huvec.proa.open.bed
+bedtools subtract -A -a huvec/dhs.rep1.bed.gz -b huvec/h3k4me3.bed.gz huvec/h3k27ac.bed.gz >cnt/huvec.proa.open.bed
 # inactive promoters/enhancers
 bedtools subtract -A -a hg19/hg19.promenh.20180925.bed -b cnt/huvec.proa.prm.bed cnt/huvec.proa.enh.bed cnt/huvec.proa.open.bed >cnt/huvec.prob.prm.enh.bed
 

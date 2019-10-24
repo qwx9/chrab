@@ -40,6 +40,10 @@ if [[ ! -f hg19/hg19.promenh.20180925.bed ]]; then
 		sed -n '/promoter:\|enhancer:/s/^/chr/p' \
 		>hg19/hg19.promenh.20180925.bed
 fi
+# hg19 %gc track
+if [[ ! hg19/hg19.gc5Base.wig.gz ]]; then
+	wget -nc -O hg19/hg19.gc5base.wig.gz 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.gc5Base.wig.gz'
+fi
 
 # download files specified in csv's, convert excel stuff
 Rscript init.R
@@ -48,5 +52,6 @@ Rscript init.R
 if [[ ! -f hg19/hg19.txt ]]; then
 	mysql --user=genome --host=genome-mysql.cse.ucsc.edu -A \
 		-e "select chrom, size from hg19.chromInfo" |\
-			grep "^`getchr`\\s" >hg19/hg19.txt
+			grep "^`getchr`\\s" |\
+			sort -k1V,1 >hg19/hg19.txt
 fi

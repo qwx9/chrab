@@ -23,7 +23,7 @@ getfromcsv("geo.csv")
 
 # convert A/B profile excel table to tsv
 x <- read_xlsx("gf/Table-AouBouAlways.xlsx", col_types="text") %>%
-	select(chr, start, end, HUVEC, IMR90, AorBvec)
+	select(chr, start, end, AorBvec, HUVEC, IMR90)
 write.table(x, file="gf/ab.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 
 # convert RepBase correlation with A/B profile excel table for HUVEC to tsv

@@ -41,8 +41,10 @@ if [[ ! -f hg19/hg19.promenh.20180925.bed.gz ]]; then
 		gzip -c >hg19/hg19.promenh.20180925.bed.gz
 fi
 # hg19 %gc track
-if [[ ! hg19/hg19.gc5Base.wig.gz ]]; then
-	wget -nc -O hg19/hg19.gc5base.wig.gz 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.gc5Base.wig.gz'
+if [[ ! hg19/hg19.gc5base.bed.gz ]]; then
+	wget -nc -O - 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.gc5Base.wigVarStep.gz' |\
+		wig2bed |\
+		gzip -c >hg19/hg19.gc5base.bed.gz
 fi
 
 # download files specified in csv's, convert excel stuff

@@ -33,12 +33,12 @@ if [[ ! -f hg19/hg19.refgene.txt.gz ]]; then
 	wget -nc -O hg19/hg19.refgene.txt.gz 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/database/refGene.txt.gz'
 fi
 # hg19 ensembl regulation GFF, convert to BED and extract promoters and enhancers only
-if [[ ! -f hg19/hg19.promenh.20180925.bed ]]; then
+if [[ ! -f hg19/hg19.promenh.20180925.bed.gz ]]; then
 	wget -O - ftp://ftp.ensembl.org/pub/grch37/release-98/regulation/homo_sapiens/homo_sapiens.GRCh37.Regulatory_Build.regulatory_features.20180925.gff.gz |\
 		gunzip -c |\
 		gff2bed |\
-		sed -n '/promoter:\|enhancer:/s/^/chr/p' \
-		>hg19/hg19.promenh.20180925.bed
+		sed -n '/promoter:\|enhancer:/s/^/chr/p' |\
+		gzip -c >hg19/hg19.promenh.20180925.bed.gz
 fi
 # hg19 %gc track
 if [[ ! hg19/hg19.gc5Base.wig.gz ]]; then

@@ -45,13 +45,6 @@ gunzip -c hg19/hg19.refgene.txt.gz |\
 	uniq -d |\
 	gzip -c >cnt/hg19.refgene.bed.gz
 
-# active genes list
-gunzip -c huvec/groseq.txt.gz |\
-	awk 'NR>1{printf("%s\t%s\t%s\t%s\n", $2, $3, $4, $5)}' |\
-	sort -k 1d,1 |\
-	uniq -d |\
-	gzip -c >cnt/huvec.proa.genes.bed.gz
-
 # repseqs
 rep2bed '$1 == "LTR" || $1 == "LINE"' >cnt/huvec.repseq.ltrline.bed.gz
 rep2bed '$1 == "LTR"' >cnt/huvec.repseq.ltr.bed.gz
@@ -75,6 +68,10 @@ bedsub huvec/dhs.rep1.bed.gz huvec/h3k4me3.bed.gz huvec/h3k27ac.bed.gz >cnt/huve
 # inactive promoters/enhancers
 bedsub hg19/hg19.promenh.20180925.bed.gz cnt/huvec.proa.prm.bed.gz cnt/huvec.proa.enh.bed.gz cnt/huvec.proa.open.bed.gz >cnt/huvec.prob.prm.enh.bed.gz
 
+bedtools merge -d 1 -i huvec/groseq.rep3.bedGraph.gz |\
+	gzip -c >cnt/huvec.groseq.bed.gz
+bedinter cnt/huvec.groseq.bed.gz cnt/hg19.refgene.bed.gz >cnt/huvec.proa.genes.bed.gz
+
 # copy individual elements for counting
 cp huvec/h3k4me3.bed.gz huvec/h3k27ac.bed.gz huvec/dhs.rep1.bed.gz hg19/hg19.promenh.20180925.bed.gz cnt/
 
@@ -84,4 +81,4 @@ bedtools makewindows -g hg19/hg19.txt -w 100000 >cnt/hg19w.bed
 # count all elements (proa/prob/repseq) per 100kb window along hg19
 cd cnt
 ls -1 *.gz |\
-	xargs -I {} -P 8 bash -c 'bedtools coverage -counts -a hg19w.bed -b {} | gzip -c > hg19w.cnt.{}.gz'
+	xargs -I {} -P 8 bash -c 'bedtools coverage -counts -a hg19w.bed -b {} | gzip -c > hg19w.cnt.{}'

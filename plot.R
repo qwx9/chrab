@@ -3,7 +3,7 @@ require(ggplot2)
 
 # generate a/b classes
 ab <- read.table("gf/ab.tsv", header=TRUE)
-ab$ngene <- read.table("cnt/hg19w.cnt.hg19.refgene.bed.gz")$V4
+ab$ngene <- read.table("cnt/hg19w.cnt.hg19.refseq.bed.gz")$V4
 ab$nact <- read.table("cnt/hg19w.cnt.huvec.proa.genes.bed.gz")$V4
 ab <- ab %>%
 	mutate(class1=ifelse(HUVEC < 0, "B", "A"),

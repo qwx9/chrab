@@ -69,7 +69,7 @@ bedsub hg19/hg19.promenh.20180925.bed.gz cnt/huvec.proa.prm.bed.gz cnt/huvec.pro
 
 bedtools merge -d 1 -i huvec/groseq.rep3.bedGraph.gz |\
 	gzip -c >cnt/huvec.groseq.bed.gz
-bedinter cnt/huvec.groseq.bed.gz cnt/hg19.refgene.bed.gz >cnt/huvec.proa.genes.bed.gz
+bedinter cnt/huvec.groseq.bed.gz cnt/hg19.refseq.bed.gz >cnt/huvec.proa.genes.bed.gz
 
 # copy individual elements for counting
 cp huvec/h3k4me3.bed.gz huvec/h3k27ac.bed.gz huvec/dhs.rep1.bed.gz hg19/hg19.promenh.20180925.bed.gz cnt/

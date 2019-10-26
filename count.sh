@@ -38,12 +38,11 @@ bedinter(){
 	gzip -c
 }
 
-# hg19 known genes
-gunzip -c hg19/hg19.refgene.txt.gz |\
-	awk '{print $3 "\t" $5 "\t" $6 "\t" $4}' |\
+# hg19 known genes: merge overlapping intervals with same gene symbol
+gunzip -c hg19/ncbiRefSeqCurated.txt.gz |\
+	awk '{if(n != $13){if(c!="") l[NR]=c "\t" s "\t" e "\t" t "\t" n; n=$13; s=$5; e=$6} if($6 > e) e=$6; c=$3; t=$4} END{for(i in l) print l[i]}' |\
 	sort -k1V,1 -k2n,2 |\
-	uniq -u |\
-	gzip -c >cnt/hg19.refgene.bed.gz
+	gzip -c >cnt/hg19.refseq.bed.gz
 
 # repseqs
 rep2bed '$1 == "LTR" || $1 == "LINE"' >cnt/huvec.repseq.ltrline.bed.gz

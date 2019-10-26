@@ -46,6 +46,8 @@ if [[ ! hg19/hg19.gc5base.bed.gz ]]; then
 		wig2bed |\
 		gzip -c >hg19/hg19.gc5base.bed.gz
 fi
+# hg19 chromHMM tracks
+wget -nc -P hg19/ 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeBroadHmm/*.gz'
 
 # download files specified in csv's, convert excel stuff
 Rscript init.R

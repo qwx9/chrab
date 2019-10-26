@@ -28,10 +28,8 @@ if [[ ! -f hg19/hg19.fa.out ]]; then
 	wget -nc -O hg19/hg19.fa.out.gz 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa.out.gz'
 	gunzip hg19/hg19.fa.out.gz
 fi
-# hg19 known genes annotation
-if [[ ! -f hg19/hg19.refgene.txt.gz ]]; then
-	wget -nc -O hg19/hg19.refgene.txt.gz 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/database/refGene.txt.gz'
-fi
+# hg19 known genes (ncbi refseq)
+wget -nc -O hg19/ncbiRefSeqCurated.txt.gz 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/database/ncbiRefSeq.txt.gz'
 # hg19 ensembl regulation GFF, convert to BED and extract promoters and enhancers only
 if [[ ! -f hg19/hg19.promenh.20180925.bed.gz ]]; then
 	wget -O - ftp://ftp.ensembl.org/pub/grch37/release-98/regulation/homo_sapiens/homo_sapiens.GRCh37.Regulatory_Build.regulatory_features.20180925.gff.gz |\

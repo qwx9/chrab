@@ -30,9 +30,13 @@ gf/Table-AouBouAlways.xlsx: A/B profile for several cell lines
 Usage
 =====
 
-To create the directory tree and download/convert used data, run init.sh.
+To re-run the entire pipeline, including dependency installation and data fetching, run run.sh.
 
-To count elements along the reference genome, run count.sh.
+To only create the directory tree and download/convert used data, run init.sh.
+
+To only count elements along the reference genome, run count.sh.
+
+To only create the plots based on the count dta, run plot.R using Rscript.
 
 
 Files

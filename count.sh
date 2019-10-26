@@ -40,9 +40,9 @@ bedinter(){
 
 # hg19 known genes
 gunzip -c hg19/hg19.refgene.txt.gz |\
-	awk '{printf("%s\t%s\t%s\t%s\n", $3, $5, $6, $4)}' |\
-	sort -k 1d,1 |\
-	uniq -d |\
+	awk '{print $3 "\t" $5 "\t" $6 "\t" $4}' |\
+	sort -k1V,1 -k2n,2 |\
+	uniq -u |\
 	gzip -c >cnt/hg19.refgene.bed.gz
 
 # repseqs

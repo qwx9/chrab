@@ -32,7 +32,13 @@ read.table("hg19/ncbiRefSeqCurated.txt.gz") %>%
 	summarize(start=min(start), end=max(end)) %>%
 	arrange(chr, start, end) %>%
 	group_by(chr) %>%
-	mutate(over=sapply(1:length(start), function(x) paste0(which(start[x] >= start & start[x] <= end | end[x] >= start & end[x] <= end | end >= start[x] & end <= end[x] | start >= start[x] & start <= end[x]), collapse=",")), overg=cntpref(over, gene)) %>%
+	mutate(over=sapply(1:length(start), function(x){
+		paste0(which(
+			start[x] >= start & start[x] <= end |
+			end[x] >= start & end[x] <= end |
+			end >= start[x] & end <= end[x] |
+			start >= start[x] & start <= end[x]), collapse=",")),
+		overg=cntpref(over, gene)) %>%
 	group_by(chr, overg, strand) %>%
 	mutate(gene=ifelse(overg!="", paste0(as.character(gene[1]), "_", "comb"), as.character(gene))) %>%
 	group_by(chr, gene, strand) %>%

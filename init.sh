@@ -39,11 +39,7 @@ if [[ ! -f hg19/hg19.promenh.20180925.bed.gz ]]; then
 		gzip -c >hg19/hg19.promenh.20180925.bed.gz
 fi
 # hg19 %gc track
-if [[ ! hg19/hg19.gc5base.bed.gz ]]; then
-	wget -nc -O - 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.gc5Base.wigVarStep.gz' |\
-		wig2bed |\
-		gzip -c >hg19/hg19.gc5base.bed.gz
-fi
+wget -nc 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.gc5Base.wigVarStep.gz'
 # hg19 chromHMM tracks
 wget -nc -P hg19/ 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeBroadHmm/*.gz'
 

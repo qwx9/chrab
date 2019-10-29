@@ -1,1 +1,1 @@
-install.packages(c("readxl", "dplyr", "ggplot2", "hexbin"))
+install.packages(c("readxl", "dplyr", "ggplot2", "hexbin", "doParallel"))

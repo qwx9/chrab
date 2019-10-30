@@ -1,6 +1,4 @@
-require(readxl)
 require(dplyr)
-options(error=recover)
 
 getfromcsv <- function(file){
 	lst <- read.csv(file)
@@ -18,16 +16,25 @@ getfromcsv <- function(file){
 		apply(lst, 1, function(x){ download.file(x["file.url"], x["file.path"]) })
 }
 
+req <- c(
+	file.path("gf", "Kassiotis-List.ORI.RepSeq.CorrB-Fourel.11july.xlsx"),
+	file.path("gf", "Table-AouBouAlways.xlsx")
+)
+for(i in req)
+	if(file.access(i, 4) != 0)
+		stop(paste("missing required file:", i))
+
+dirs <- c(
+	"hg19",
+	"huvec",
+	"imr90",
+	"prep",
+	"cnt",
+	"plot"
+)
+for(i in dirs)
+	dir.create(i, showWarnings=FALSE)
+
 getfromcsv("encode.csv")
 getfromcsv("geo.csv")
-
-# convert A/B profile excel table to tsv
-x <- read_xlsx("gf/Table-AouBouAlways.xlsx", col_types="text") %>%
-	select(chr, start, end, AorBvec, HUVEC, IMR90) %>%
-	mutate(start=format(as.integer(start)-1, scientific=FALSE, trim=TRUE))
-write.table(x, file="gf/ab.tsv", sep="\t", quote=FALSE, row.names=FALSE)
-
-# convert RepBase correlation with A/B profile excel table for HUVEC to tsv
-x <- read_xlsx("gf/Kassiotis-List.ORI.RepSeq.CorrB-Fourel.11july.xlsx", col_types="text") %>%
-	select(-"Rank CorrB")
-write.table(x, file="gf/huvec.repseq.tsv", sep="\t", quote=FALSE, row.names=FALSE)
+getfromcsv("hg19.csv")

@@ -1,5 +1,6 @@
 require(dplyr)
 require(doParallel)
+require(readxl)
 
 gzreadlines <- function(file, n, fn){
 	gfd <- gzfile(file, "r")
@@ -152,10 +153,25 @@ mkchr <- function(){
 		write.table("cnt/hg19.txt", sep="\t", row.names=FALSE, quote=FALSE)
 }
 
+mkab <- function(){
+	read_xlsx("gf/Table-AouBouAlways.xlsx", col_types="text") %>%
+		select(chr, start, end, AorBvec, HUVEC, IMR90) %>%
+		mutate(start=format(as.integer(start)-1, scientific=FALSE, trim=TRUE)) %>%
+		write.table("gf/ab.bed", sep="\t", quote=FALSE, row.names=FALSE)
+}
+
+mkhuvecrep <- function(){
+	read_xlsx("gf/Kassiotis-List.ORI.RepSeq.CorrB-Fourel.11july.xlsx", col_types="text") %>%
+		select(-"Rank CorrB") %>%
+		write.table("gf/huvec.repseq.tsv", sep="\t", quote=FALSE, row.names=FALSE)
+}
+
 l <- list(
 	list(f="cnt/hg19.refseq.bed.gz", fn=mkrefseq),
 	list(f="cnt/hg19w.hg19.gc5base.bed.gz", fn=mkgc5),
-	list(f="cnt/hg19.txt", fn=mkchr)
+	list(f="cnt/hg19.txt", fn=mkchr),
+	list(f="prep/ab.bed", fn=mkab),
+	list(f="prep/huvec.repseq.tsv", fn=mkhuvecrep)
 )
 for(i in l)
 	if(file.access(i$f, 4) != 0)

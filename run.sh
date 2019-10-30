@@ -2,6 +2,7 @@
 ./clean.sh
 ./install.sh
 ./installtools.sh
-./init.sh
+Rscript init.R
+Rscript prep.R
 ./count.sh
 Rscript plot.R

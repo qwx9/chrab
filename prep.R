@@ -72,7 +72,7 @@ mkrefseq <- function(){
 		ungroup %>%
 		arrange(chr, start, end, strand) %>%
 		select(chr, start, end, strand, gene) %>%
-		write.gzip("cnt/hg19.refseq.bed.gz")
+		write.gzip("prep/hg19.refseq.bed.gz")
 }
 
 gc5cnt <- function(x, sq){
@@ -137,7 +137,7 @@ mkgc5 <- function(){
 		mutate(gc=n/nt) %>%
 		select(chr, start, end, gc, n, nt) %>%
 		arrange(chr, start) %>%
-		write.gzip("cnt/hg19.gc5base.bed.gz")
+		write.gzip("prep/hg19.gc5base.bed.gz")
 }
 
 mkchr <- function(){
@@ -150,7 +150,7 @@ mkchr <- function(){
 		mutate(chr=ifelse(nchar(chrom) == 4 & substr(chrom, 4, 4) %in% 0:9, paste0("chr0", substr(chrom, 4, 4)), chrom)) %>%
 		arrange(chr) %>%
 		select(-chr) %>%
-		write.table("cnt/hg19.txt", sep="\t", row.names=FALSE, quote=FALSE)
+		write.table("prep/hg19.txt", sep="\t", row.names=FALSE, quote=FALSE)
 }
 
 mkab <- function(){
@@ -167,9 +167,9 @@ mkhuvecrep <- function(){
 }
 
 l <- list(
-	list(f="cnt/hg19.refseq.bed.gz", fn=mkrefseq),
-	list(f="cnt/hg19w.hg19.gc5base.bed.gz", fn=mkgc5),
-	list(f="cnt/hg19.txt", fn=mkchr),
+	list(f="prep/hg19.refseq.bed.gz", fn=mkrefseq),
+	list(f="prep/hg19w.hg19.gc5base.bed.gz", fn=mkgc5),
+	list(f="prep/hg19.txt", fn=mkchr),
 	list(f="prep/ab.bed", fn=mkab),
 	list(f="prep/huvec.repseq.tsv", fn=mkhuvecrep)
 )

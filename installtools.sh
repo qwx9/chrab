@@ -1,2 +1,2 @@
 #!/bin/bash
-sudo apt install -y git w3m igv
+sudo apt install -y git igv

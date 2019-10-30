@@ -50,7 +50,7 @@ cntpref <- function(x, g){
 	})
 }
 
-mkrefseq <- function(){
+mkrefseq <- function(f){
 	read.table("hg19/ncbiRefSeqCurated.txt.gz") %>%
 		select(chr=V3, start=V5, end=V6, strand=V4, gene=V13) %>%
 		group_by(chr, gene, strand) %>%
@@ -72,7 +72,7 @@ mkrefseq <- function(){
 		ungroup %>%
 		arrange(chr, start, end, strand) %>%
 		select(chr, start, end, strand, gene) %>%
-		write.gzip("prep/hg19.refseq.bed.gz")
+		write.gzip(f)
 }
 
 gc5cnt <- function(x, sq){
@@ -115,7 +115,7 @@ gc5cnt <- function(x, sq){
 	list(chr=chr[1:n], start=start[1:n], end=end[1:n], n=cnt[1:n], nt=nt[1:n], sq=rep(sq, n))
 }
 
-mkgc5 <- function(){
+mkgc5 <- function(f){
 	df <- gzreadlines("hg19/hg19.gc5Base.wigVarStep.gz", 10*100000, gc5cnt)
 	u <- unique(df$chr)
 	l <- vector(mode="list", length=length(u))
@@ -137,10 +137,10 @@ mkgc5 <- function(){
 		mutate(gc=n/nt) %>%
 		select(chr, start, end, gc, n, nt) %>%
 		arrange(chr, start) %>%
-		write.gzip("prep/hg19.gc5base.bed.gz")
+		write.gzip(f)
 }
 
-mkchr <- function(){
+mkchr <- function(f){
 	o <- src_mysql("hg19", "genome-mysql.cse.ucsc.edu", username="genome")
 	t <- o %>%
 		tbl("chromInfo") %>%
@@ -150,21 +150,37 @@ mkchr <- function(){
 		mutate(chr=ifelse(nchar(chrom) == 4 & substr(chrom, 4, 4) %in% 0:9, paste0("chr0", substr(chrom, 4, 4)), chrom)) %>%
 		arrange(chr) %>%
 		select(-chr) %>%
-		write.table("prep/hg19.txt", sep="\t", row.names=FALSE, quote=FALSE)
+		write.table(f, sep="\t", row.names=FALSE, quote=FALSE)
 }
 
-mkab <- function(){
+mkab <- function(f){
 	read_xlsx("gf/Table-AouBouAlways.xlsx", col_types="text") %>%
 		select(chr, start, end, AorBvec, HUVEC, IMR90) %>%
 		mutate(start=format(as.integer(start)-1, scientific=FALSE, trim=TRUE)) %>%
-		write.table("gf/ab.bed", sep="\t", quote=FALSE, row.names=FALSE)
+		write.table(f, sep="\t", quote=FALSE, row.names=FALSE)
 }
 
-mkhuvecrep <- function(){
+mkhuvecrep <- function(f){
 	read_xlsx("gf/Kassiotis-List.ORI.RepSeq.CorrB-Fourel.11july.xlsx", col_types="text",
 		.name_repair=~gsub(" ", "_", .x)) %>%
 		select(-"Rank CorrB") %>%
-		write.table("gf/huvec.repseq.tsv", sep="\t", quote=FALSE, row.names=FALSE)
+		write.table(f, sep="\t", quote=FALSE, row.names=FALSE)
+}
+
+mkpromenh <- function(f){
+	read.table("hg19/homo_sapiens.GRCh37.Regulatory_Build.regulatory_features.20180925.gff.gz") %>%
+		filter(V3 %in% c("promoter", "enhancer")) %>%
+		select(V1, V4, V5, V9) %>%
+		mutate(V1=paste0("chr", V1), V9=strsplit(as.character(V9), "=|;")[[1]][2]) %>%
+		write.gzip(f)
+}
+
+mkprom <- function(f){
+	read.table("hg19/homo_sapiens.GRCh37.Regulatory_Build.regulatory_features.20180925.gff.gz") %>%
+		filter(V3 == "promoter") %>%
+		select(V1, V4, V5, V9) %>%
+		mutate(V1=paste0("chr", V1), V9=strsplit(as.character(V9), "=|;")[[1]][2]) %>%
+		write.gzip(f)
 }
 
 mkconv <- function(){
@@ -173,11 +189,13 @@ mkconv <- function(){
 		list(f="prep/hg19w.hg19.gc5base.bed.gz", fn=mkgc5),
 		list(f="prep/hg19.txt", fn=mkchr),
 		list(f="prep/ab.bed", fn=mkab),
-		list(f="prep/huvec.repseq.tsv", fn=mkhuvecrep)
+		list(f="prep/huvec.repseq.tsv", fn=mkhuvecrep),
+		list(f="prep/hg19.promenh.gff.gz", fn=mkpromenh),
+		list(f="prep/hg19.prom.gff.gz", fn=mkprom)
 	)
 	for(i in l)
 		if(file.access(i$f, 4) != 0)
-			i$fn()
+			i$fn(i$f)
 }
 
 mkrepseq <- function(){

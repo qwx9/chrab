@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 # tree structure
-mkdir -p hg19 huvec imr90 cnt plot
+mkdir -p hg19 huvec imr90 prep cnt plot
 
 if [[ ! -f gf/Kassiotis-List.ORI.RepSeq.CorrB-Fourel.11july.xlsx || ! -f gf/Table-AouBouAlways.xlsx ]]; then
 	echo 'missing input files in gf/ subdirectory!'

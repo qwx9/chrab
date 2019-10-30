@@ -139,9 +139,23 @@ mkgc5 <- function(){
 		write.gzip("cnt/hg19.gc5base.bed.gz")
 }
 
+mkchr <- function(){
+	o <- src_mysql("hg19", "genome-mysql.cse.ucsc.edu", username="genome")
+	t <- o %>%
+		tbl("chromInfo") %>%
+		select(chrom, size) %>%
+		collect %>%
+		filter(grepl("chr[1-9XY][0-9]?$", chrom)) %>%
+		mutate(chr=ifelse(nchar(chrom) == 4 & substr(chrom, 4, 4) %in% 0:9, paste0("chr0", substr(chrom, 4, 4)), chrom)) %>%
+		arrange(chr) %>%
+		select(-chr) %>%
+		write.table("cnt/hg19.txt", sep="\t", row.names=FALSE, quote=FALSE)
+}
+
 l <- list(
 	list(f="cnt/hg19.refseq.bed.gz", fn=mkrefseq),
-	list(f="cnt/hg19w.hg19.gc5base.bed.gz", fn=mkgc5)
+	list(f="cnt/hg19w.hg19.gc5base.bed.gz", fn=mkgc5),
+	list(f="cnt/hg19.txt", fn=mkchr)
 )
 for(i in l)
 	if(file.access(i$f, 4) != 0)

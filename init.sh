@@ -1,21 +1,5 @@
 #!/bin/bash -e
 
-getchr(){
-	awk '
-	NR > 1{
-		a[$1]=""
-	}
-	END{
-		s=""
-		for(i in a)
-			if(s == "")
-				s = "\(" i
-			else
-				s = s "\|" i
-		print s "\)"
-	}' gf/ab.tsv
-}
-
 # tree structure
 mkdir -p hg19 huvec imr90 cnt plot
 
@@ -41,11 +25,3 @@ wget -nc -P hg19/ 'ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/encodeDCC/wgEnc
 
 # download files specified in csv's, convert excel stuff
 Rscript init.R
-
-# hg19 chromosome info (for windowing), needs gf/ab.tsv to restrict chromosome names
-if [[ ! -f hg19/hg19.txt ]]; then
-	mysql --user=genome --host=genome-mysql.cse.ucsc.edu -A \
-		-e "select chrom, size from hg19.chromInfo" |\
-			grep "^`getchr`\\s" |\
-			sort -k1V,1 >hg19/hg19.txt
-fi

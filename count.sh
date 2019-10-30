@@ -1,33 +1,5 @@
 #!/bin/bash -e
 
-rep2bed(){
-	awk '
-	FNR == NR && NR > 1{
-		if('"$1"')
-			s[$3] = ""
-	}
-	FNR != NR{
-		if($10 in s)
-			printf("%s\t%s\t%s\t%s\n", $5, $6, $7, $10)
-	}
-	' gf/huvec.repseq.tsv hg19/hg19.fa.out |\
-	gzip -c
-}
-
-getrep(){
-	f=huvec.repseq.only.`echo $1 | sed 's,/,-,g;s,(\|),,g'`.bed.gz
-	grep "$1\s" hg19/hg19.fa.out |\
-		awk '{printf("%s\t%s\t%s\t%s\n", $5, $6, $7, $10)}' |\
-		gzip -c >cnt/$f
-}
-
-# xargs black magic
-reps2beds(){
-	export -f getrep
-	awk 'NR>1{print $3}' gf/huvec.repseq.tsv |\
-		xargs -P 8 -I {} bash -c 'getrep "$@"' _ {}
-}
-
 bedsub(){
 	bedtools subtract -A -a $1 -b ${@:2} |\
 	gzip -c
@@ -37,26 +9,6 @@ bedinter(){
 	bedtools intersect -a $1 -b ${@:2} |\
 	gzip -c
 }
-
-# hg19 known genes: merge overlapping intervals with same gene symbol
-gunzip -c hg19/ncbiRefSeqCurated.txt.gz |\
-	awk '{if(n != $13){if(c!="") l[NR]=c "\t" s "\t" e "\t" t "\t" n; n=$13; s=$5; e=$6} if($6 > e) e=$6; c=$3; t=$4} END{for(i in l) print l[i]}' |\
-	sort -k1V,1 -k2n,2 |\
-	gzip -c >cnt/hg19.refseq.bed.gz
-
-# repseqs
-rep2bed '$1 == "LTR" || $1 == "LINE"' >cnt/huvec.repseq.ltrline.bed.gz
-rep2bed '$1 == "LTR"' >cnt/huvec.repseq.ltr.bed.gz
-rep2bed '$1 == "LINE" && $2 == "L1"' >cnt/huvec.repseq.l1.bed.gz
-rep2bed '$4 < -0.01' >cnt/huvec.prob.repseq.bed.gz
-rep2bed '$4 < -0.01 && ($1 == "LTR" || $1 == "LINE")' >cnt/huvec.prob.repseq.ltrline.bed.gz
-rep2bed '$4 < -0.01 && $1 == "LTR"' >cnt/huvec.prob.repseq.ltr.bed.gz
-rep2bed '$4 < -0.01 && $1 == "LINE"' >cnt/huvec.prob.repseq.line.bed.gz
-rep2bed '$4 < -0.01 && ($1 == "Simple_repeat" || $1 == "Low_complexity" || $1 == "Satellite")' >cnt/huvec.prob.repseq.sr.lc.sat.bed.gz
-rep2bed '$4 > 0.04' >cnt/huvec.proa.repseq.bed.gz
-
-# individual repseqs
-reps2beds
 
 # active promoters
 bedinter huvec/h3k4me3.bed.gz huvec/h3k27ac.bed.gz >cnt/huvec.proa.prm.bed.gz

@@ -161,18 +161,58 @@ mkab <- function(){
 }
 
 mkhuvecrep <- function(){
-	read_xlsx("gf/Kassiotis-List.ORI.RepSeq.CorrB-Fourel.11july.xlsx", col_types="text") %>%
+	read_xlsx("gf/Kassiotis-List.ORI.RepSeq.CorrB-Fourel.11july.xlsx", col_types="text",
+		.name_repair=~gsub(" ", "_", .x)) %>%
 		select(-"Rank CorrB") %>%
 		write.table("gf/huvec.repseq.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 }
 
-l <- list(
-	list(f="prep/hg19.refseq.bed.gz", fn=mkrefseq),
-	list(f="prep/hg19w.hg19.gc5base.bed.gz", fn=mkgc5),
-	list(f="prep/hg19.txt", fn=mkchr),
-	list(f="prep/ab.bed", fn=mkab),
-	list(f="prep/huvec.repseq.tsv", fn=mkhuvecrep)
-)
-for(i in l)
-	if(file.access(i$f, 4) != 0)
-		i$fn()
+mkconv <- function(){
+	l <- list(
+		list(f="prep/hg19.refseq.bed.gz", fn=mkrefseq),
+		list(f="prep/hg19w.hg19.gc5base.bed.gz", fn=mkgc5),
+		list(f="prep/hg19.txt", fn=mkchr),
+		list(f="prep/ab.bed", fn=mkab),
+		list(f="prep/huvec.repseq.tsv", fn=mkhuvecrep)
+	)
+	for(i in l)
+		if(file.access(i$f, 4) != 0)
+			i$fn()
+}
+
+mkrepseq <- function(){
+	repmask <- read.table("hg19/hg19.fa.out.gz", skip=2)
+	repcor <- read.table("prep/huvec.repseq.tsv", header=TRUE)
+
+	l <- list(
+		list(f="prep/huvec.repseq.ltrline.bed.gz", q=quote(repcor %>% filter(Class %in% c("LTR", "LINE")))),
+		list(f="prep/huvec.repseq.ltr.bed.gz", q=quote(repcor %>% filter(Class == "LTR"))),
+		list(f="prep/huvec.repseq.l1.bed.gz", q=quote(repcor %>% filter(Class == "LINE" & Family == "L1"))),
+		list(f="prep/huvec.repseq.prob.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01))),
+		list(f="prep/huvec.repseq.prob.ltrline.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class %in% c("LTR", "LINE")))),
+		list(f="prep/huvec.repseq.prob.ltr.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class == "LTR"))),
+		list(f="prep/huvec.repseq.prob.line.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class == "LINE"))),
+		list(f="prep/huvec.repseq.prob.sr.lc.sat.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class %in% c("Simple_repeat", "Low_complexity", "Satellite")))),
+		list(f="prep/huvec.repseq.proa.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.04)))
+	)
+	for(i in l)
+		if(file.access(i$f, 4) != 0){
+			repmask %>%
+				filter(V10 %in% eval(i$q)$Name) %>%
+				select(V5, V6, V7, V10) %>%
+				write.gzip(i$f)
+		}
+	for(i in repcor$Name){
+		f <- paste("prep/huvec.repseq.only",
+			gsub("\\(|\\)", "", gsub("/", "-", i)), "bed.gz", collapse=".")
+		if(file.access(f, 4) != 0){
+			repmask %>%
+				filter(V10 == as.character(i)) %>%
+				select(V5, V6, V7, V10) %>%
+				write.gzip(f)
+		}
+	}
+}
+
+mkconv()
+mkrepseq()

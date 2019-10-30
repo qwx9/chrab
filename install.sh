@@ -1,3 +1,3 @@
 #!/bin/bash
-sudo apt install -y bedtools r-base-core bedops mysql-client
+sudo apt install -y bedtools r-base-core libmariadbclient-dev
 Rscript install.R

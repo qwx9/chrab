@@ -98,15 +98,15 @@ gc5cnt <- function(x, sq){
 			chr[n] <- paste0("chrsq", sq)
 			start[n] <- k
 			end[n] <- k + 100000
-			cnt[n] <- 0
-			nt[n] <- 0
+			cnt[n] <- as.integer(i[2]) / 20
+			nt[n] <- 5
 		}else if(as.integer(i[1]) - 1 > end[n]){
 			n <- n + 1
 			chr[n] <- chr[n-1]
 			start[n] <- start[n-1] + 100000
 			end[n] <- end[n-1] + 100000
-			cnt[n] <- 0
-			nt[n] <- 0
+			cnt[n] <- as.integer(i[2]) / 20
+			nt[n] <- 5
 		}else{
 			cnt[n] <- cnt[n] + as.integer(i[2]) / 20
 			nt[n] <- nt[n] + 5

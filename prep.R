@@ -51,7 +51,7 @@ cntpref <- function(x, g){
 }
 
 mkrefseq <- function(f){
-	read.table("hg19/ncbiRefSeqCurated.txt.gz") %>%
+	read.table("hg19/ncbiRefSeq.txt.gz") %>%
 		select(chr=V3, start=V5, end=V6, strand=V4, gene=V13) %>%
 		group_by(chr, gene, strand) %>%
 		summarize(start=min(start), end=max(end)) %>%
@@ -100,7 +100,7 @@ gc5cnt <- function(x, sq){
 			end[n] <- k + 100000
 			cnt[n] <- 0
 			nt[n] <- 0
-		}else if(as.integer(i[1]) - 1 >= end[n]){
+		}else if(as.integer(i[1]) - 1 > end[n]){
 			n <- n + 1
 			chr[n] <- chr[n-1]
 			start[n] <- start[n-1] + 100000
@@ -163,12 +163,12 @@ mkab <- function(f){
 mkhuvecrep <- function(f){
 	read_xlsx("gf/Kassiotis-List.ORI.RepSeq.CorrB-Fourel.11july.xlsx", col_types="text",
 		.name_repair=~gsub(" ", "_", .x)) %>%
-		select(-"Rank CorrB") %>%
+		select(-Rank_CorrB) %>%
 		write.table(f, sep="\t", quote=FALSE, row.names=FALSE)
 }
 
 mkpromenh <- function(f){
-	read.table("hg19/homo_sapiens.GRCh37.Regulatory_Build.regulatory_features.20180925.gff.gz") %>%
+	read.table("hg19/homo_sapiens.GRCh37.Regulatory_Build.regulatory_features.20180925.gff.gz", fill=TRUE) %>%
 		filter(V3 %in% c("promoter", "enhancer")) %>%
 		select(V1, V4, V5, V9) %>%
 		mutate(V1=paste0("chr", V1), V9=strsplit(as.character(V9), "=|;")[[1]][2]) %>%
@@ -176,7 +176,7 @@ mkpromenh <- function(f){
 }
 
 mkprom <- function(f){
-	read.table("hg19/homo_sapiens.GRCh37.Regulatory_Build.regulatory_features.20180925.gff.gz") %>%
+	read.table("hg19/homo_sapiens.GRCh37.Regulatory_Build.regulatory_features.20180925.gff.gz", fill=TRUE) %>%
 		filter(V3 == "promoter") %>%
 		select(V1, V4, V5, V9) %>%
 		mutate(V1=paste0("chr", V1), V9=strsplit(as.character(V9), "=|;")[[1]][2]) %>%
@@ -221,8 +221,8 @@ mkrepseq <- function(){
 				write.gzip(i$f)
 		}
 	for(i in repcor$Name){
-		f <- paste("prep/huvec.repseq.only",
-			gsub("\\(|\\)", "", gsub("/", "-", i)), "bed.gz", collapse=".")
+		f <- paste0("prep/huvec.repseq.only.",
+			gsub("\\(|\\)", "", gsub("/", "-", i)), ".bed.gz")
 		if(file.access(f, 4) != 0){
 			repmask %>%
 				filter(V10 == as.character(i)) %>%

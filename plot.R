@@ -2,9 +2,9 @@ require(dplyr)
 require(ggplot2)
 
 # generate a/b classes
-ab <- read.table("gf/ab.tsv", header=TRUE)
-ab$ngene <- read.table("cnt/hg19w.cnt.hg19.refseq.bed.gz")$V4
-ab$nact <- read.table("cnt/hg19w.cnt.huvec.proa.genes.bed.gz")$V4
+ab <- read.table("prep/ab.bed", header=TRUE)
+ab$ngene <- read.table("cnt/hg19w.hg19.refseq.bed.gz")$V4
+ab$nact <- read.table("cnt/hg19w.huvec.proa.genes.bed.gz")$V4
 ab <- ab %>%
 	mutate(class1=ifelse(HUVEC < 0, "B", "A"),
 		class2=ifelse(ngene >= 4, "highgenedensity", ifelse(ngene > 0, "normalgenedensity", "nogene")),

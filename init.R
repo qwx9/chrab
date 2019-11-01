@@ -30,7 +30,8 @@ dirs <- c(
 	"imr90",
 	"prep",
 	"cnt",
-	"plot"
+	"plot",
+	"tabs"
 )
 for(i in dirs)
 	dir.create(i, showWarnings=FALSE)

@@ -3,8 +3,12 @@ require(ggplot2)
 
 # generate a/b classes
 ab <- read.table("prep/ab.bed", header=TRUE)
-ab$ngene <- read.table("cnt/hg19w.hg19.refseq.bed.gz")$V4
-ab$nact <- read.table("cnt/hg19w.huvec.proa.genes.bed.gz")$V4
+ab$ngene <- read.table("cnt/hg19w.hg19.refseq.bed.gz") %>%
+	filter(V1 %in% unique(ab$chr)) %>%
+	pull(V4)
+ab$nact <- read.table("cnt/hg19w.huvec.proa.genes.bed.gz") %>%
+	filter(V1 %in% unique(ab$chr)) %>%
+	pull(V4)
 ab <- ab %>%
 	mutate(class1=ifelse(HUVEC < 0, "B", "A"),
 		class2=ifelse(ngene >= 4, "highgenedensity", ifelse(ngene > 0, "normalgenedensity", "nogene")),

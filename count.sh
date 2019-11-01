@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/sh -e
 
 bedsub(){
 	bedtools subtract -A -a $1 -b ${@:2} |\

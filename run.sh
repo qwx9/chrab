@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/sh -e
 ./clean.sh
 ./install.sh
 ./installtools.sh

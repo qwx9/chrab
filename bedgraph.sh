@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/sh -e
 mkdir -p igv
 cd cnt
 for i in *.bed.gz; do

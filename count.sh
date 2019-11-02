@@ -10,7 +10,10 @@ bedinter(){
 	gzip -c
 }
 
-cp huvec/h3k4me3.bed.gz huvec/h3k27ac.bed.gz huvec/dhs.rep1.bed.gz prep/
+cp huvec/h3k4me3.bed.gz prep/huvec.h3k4me3.bed.gz
+cp huvec/h3k27ac.bed.gz prep/huvec.h3k27ac.bed.gz
+cp huvec/dhs.rep1.bed.gz prep/huvec.dhs.rep1.bed.gz
+
 # active promoters
 bedinter prep/h3k4me3.bed.gz prep/h3k27ac.bed.gz >prep/huvec.proa.prm.bed.gz
 # active enhancers
@@ -30,5 +33,7 @@ bedtools makewindows -g prep/hg19.txt -w 100000 >prep/hg19w.bed
 # count all elements (proa/prob/repseq) per 100kb window along hg19
 cd prep
 ls -1 *.gz |\
+	grep -v 'hg19w\.gc5base' |\
 	xargs -I {} -P 8 bash -c \
 		'bedtools coverage -counts -a hg19w.bed -b {} | gzip -c > ../cnt/hg19w.{}'
+cp prep/hg19w.hg19.gc5base.bed.gz cnt/

@@ -199,7 +199,8 @@ mkconv <- function(){
 }
 
 mkrepseq <- function(){
-	repmask <- read.table("hg19/hg19.fa.out.gz", skip=2)
+	repmask <- read.table("hg19/hg19.fa.out.gz", skip=2) %>%
+		select(chr=V5, start=V6, end=V7, id=V10)
 	repcor <- read.table("prep/huvec.repseq.tsv", header=TRUE)
 
 	l <- list(
@@ -213,23 +214,21 @@ mkrepseq <- function(){
 		list(f="prep/huvec.repseq.prob.sr.lc.sat.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class %in% c("Simple_repeat", "Low_complexity", "Satellite")))),
 		list(f="prep/huvec.repseq.proa.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.04)))
 	)
-	for(i in l)
-		if(file.access(i$f, 4) != 0){
-			repmask %>%
-				filter(V10 %in% eval(i$q)$Name) %>%
-				select(V5, V6, V7, V10) %>%
-				write.gzip(i$f)
-		}
-	for(i in repcor$Name){
-		f <- paste0("prep/huvec.repseq.only.",
-			gsub("\\(|\\)", "", gsub("/", "-", i)), ".bed.gz")
-		if(file.access(f, 4) != 0){
-			repmask %>%
-				filter(V10 == as.character(i)) %>%
-				select(V5, V6, V7, V10) %>%
-				write.gzip(f)
-		}
+	f <- paste0("prep/huvec.repseq.only.",
+		gsub("\\(|\\)", "", gsub("/", "-", repcor$Name)), ".bed.gz")
+	f <- c(sapply(l, function(x) x$f), f)
+	n <- c(sapply(l, function(x) as.character(eval(x$q)$Name)), as.character(repcor$Name))
+	i <- unlist(sapply(seq_along(f), function(i) if(file.access(f[i], 4) == 0) i else NULL))
+	if(!is.null(i)){
+		f <- f[-i]
+		n <- n[-i]
 	}
+	nc <- detectCores()
+	cl <- makeCluster(nc)
+	registerDoParallel(cl)
+	l <- foreach(f=f, n=n, .inorder=FALSE, .export="write.gzip") %dopar%
+		write.gzip(repmask[repmask$id %in% n,], f)
+	stopCluster(cl)
 }
 
 mkconv()

@@ -13,7 +13,33 @@ ab <- read.table("prep/ab.bed", header=TRUE) %>%
 	mutate(class1=ifelse(HUVEC < 0, "B", "A"),
 		class2=ifelse(ngene >= 4, "highgenedensity", ifelse(ngene > 0, "normalgenedensity", "nogene")),
 		class3=ifelse(nact > 0, "hasactive", "noactive"),
-		class=paste(class1, class2, AorBvec, class3, sep="_")) %>%
+		class=paste(class1, class2, AorBvec, class3, sep="_"))
+
+as.data.frame(table(ab$class1, useNA="always")) %>%
+	select(type=Var1, count=Freq) %>%
+	arrange(type) %>%
+	filter(count != 0) %>%
+	write.table("tabs/bins.by1.tsv", sep="\t", row.names=FALSE, quote=FALSE)
+as.data.frame(table(ab$class1, ab$class2, useNA="always")) %>%
+	select(type=Var1, genedensity=Var2, count=Freq) %>%
+	mutate(genedensity=factor(genedensity, levels=levels(genedensity)[c(1,3,2)])) %>%
+	arrange(type, genedensity) %>%
+	filter(count != 0) %>%
+	write.table("tabs/bins.by2.tsv", sep="\t", row.names=FALSE, quote=FALSE)
+as.data.frame(table(ab$class1, ab$class2, ab$AorBvec, useNA="always")) %>%
+	select(type=Var1, genedensity=Var2, pc1=Var3, count=Freq) %>%
+	mutate(genedensity=factor(genedensity, levels=levels(genedensity)[c(1,3,2)])) %>%
+	arrange(type, genedensity, pc1) %>%
+	filter(count != 0) %>%
+	write.table("tabs/bins.by3.tsv", sep="\t", row.names=FALSE, quote=FALSE)
+as.data.frame(table(ab$class1, ab$class2, ab$AorBvec, ab$class3, useNA="always")) %>%
+	select(type=Var1, genedensity=Var2, pc1=Var3, active=Var4, count=Freq) %>%
+	mutate(genedensity=factor(genedensity, levels=levels(genedensity)[c(1,3,2)])) %>%
+	arrange(type, genedensity, pc1, active) %>%
+	filter(count != 0) %>%
+	write.table("tabs/bins.by4.tsv", sep="\t", row.names=FALSE, quote=FALSE)
+
+ab <- ab %>%
 	select(-class1, -class2, -class3)
 write.table(ab, "tabs/class.tsv", sep="\t", row.names=FALSE, quote=FALSE)
 
@@ -24,6 +50,9 @@ for(i in list.files("cnt")){
 	ab <- ab %>%
 		mutate(!!s:=addcol(chr, paste0("cnt/", i)))
 }
+ab %>%
+	select(-contains("repseq.only")) %>%
+	write.table("tabs/counts.tsv", sep="\t", row.names=FALSE, quote=FALSE)
 gfd <- gzfile("tabs/aball.tsv.gz", "w")
 write.table(ab, gfd, sep="\t", row.names=FALSE, quote=FALSE)
 close(gfd)

@@ -183,6 +183,30 @@ mkprom <- function(f){
 		write.gzip(f)
 }
 
+mkgroseq <- function(f){
+	lapply(c("huvec/groseq.rep1.bedGraph.gz",
+		"huvec/groseq.rep2.bedGraph.gz",
+		"huvec/groseq.rep3.bedGraph.gz",
+		"huvec/groseq.rep4.bedGraph.gz"),
+		function(x){
+			x <- read.table(x, skip=1, sep="\t", fill=TRUE)
+			x <- subset(x, V1 != "chrM")
+			i <- grep("^track ", x$V1)
+			x <- droplevels(x[-i,])
+			y <- x[i:nrow(x),]
+			y$strand <- "-"
+			x <- x[2:(i-1),]
+			x$strand <- "+"
+			list(x, y)
+		}) %>%
+		unlist(recursive=FALSE) %>%
+		bind_rows %>%
+		mutate(name=rep("")) %>%
+		select(V1, V2, V3, name, V4, strand) %>%
+		arrange(V1, V2) %>%
+		write.gzip(f)
+}
+
 mkconv <- function(){
 	l <- list(
 		list(f="prep/hg19.refseq.bed.gz", fn=mkrefseq),
@@ -191,7 +215,8 @@ mkconv <- function(){
 		list(f="prep/ab.bed", fn=mkab),
 		list(f="prep/huvec.repseq.tsv", fn=mkhuvecrep),
 		list(f="prep/hg19.promenh.gff.gz", fn=mkpromenh),
-		list(f="prep/hg19.prom.gff.gz", fn=mkprom)
+		list(f="prep/hg19.prom.gff.gz", fn=mkprom),
+		list(f="prep/huvec.groseq.allrep.bed.gz", fn=mkgroseq)
 	)
 	for(i in l)
 		if(file.access(i$f, 4) != 0)

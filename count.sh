@@ -14,6 +14,27 @@ bedinter(){
 		gzip -c
 }
 
+mergenames(){
+	gunzip -c $* |\
+		awk '
+		{
+			i=$1$4
+			if(e[i]==""){
+				g[i]="\t" $4 "\t" $5 "\t" $6
+				s[i]=$2
+				e[i]=$3
+				c[i]=$1
+			}else
+				e[i]=$3
+		}
+		END{
+			for(i in g)
+				print c[i] "\t" s[i] "\t" e[i] "\t" g[i]
+		}' |\
+		sort -k1,1 -k2n,2 |\
+		gzip -c
+}
+
 cp huvec/h3k4me3.bed.gz prep/huvec.h3k4me3.bed.gz
 cp huvec/h3k27ac.bed.gz prep/huvec.h3k27ac.bed.gz
 cp huvec/dhs.rep1.bed.gz prep/huvec.dhs.rep1.bed.gz
@@ -29,9 +50,10 @@ bedsub prep/hg19.promenh.gff.gz prep/huvec.proa.prm.bed.gz prep/huvec.proa.enh.b
 
 bedtools merge -s -c 4,5,6 -o distinct,mean,distinct -i prep/huvec.groseq.allrep.bed.gz |\
 	gzip -c >prep/huvec.groseq.mean.bed.gz
-bedtools merge -s -d 1 -c 6 -o distinct -i prep/huvec.groseq.mean.bed.gz |\
+bedtools merge -s -d 1 -c 4,5,6 -o distinct,distinct,distinct -i prep/huvec.groseq.mean.bed.gz |\
 	gzip -c >prep/huvec.groseq.merged.bed.gz
-bedinter prep/huvec.groseq.merged.bed.gz prep/hg19.refseq.bed.gz >prep/huvec.proa.genes.bed.gz
+bedinter prep/hg19.refseq.bed.gz prep/huvec.groseq.merged.bed.gz -s >prep/huvec.refseq.inter.bed.gz
+mergenames prep/huvec.refseq.inter.bed.gz >prep/huvec.proa.genes.bed.gz
 
 # split hg19 into 100kb windows
 bedtools makewindows -g prep/hg19.txt -w 100000 >prep/hg19w.bed

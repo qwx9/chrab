@@ -9,6 +9,7 @@ Requirements:
 - xargs (e.g. from findutils)
 - gzip
 - grep, sed
+- awk (tested with mawk)
 - unix shell (tested with bash, dash) and a coreutils implementation (tested with GNU coreutils)
 
 

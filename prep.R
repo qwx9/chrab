@@ -71,7 +71,8 @@ mkrefseq <- function(f){
 		summarize(start=min(start), end=max(end)) %>%
 		ungroup %>%
 		arrange(chr, start, end, strand) %>%
-		select(chr, start, end, strand, gene) %>%
+		mutate(score=rep(0)) %>%
+		select(chr, start, end, gene, score, strand) %>%
 		write.gzip(f)
 }
 

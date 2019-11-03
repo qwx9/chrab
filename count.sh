@@ -20,16 +20,28 @@ mergenames(){
 		{
 			i=$1$4
 			if(e[i]==""){
-				g[i]="\t" $4 "\t" $5 "\t" $6
+				g[i]=$4 "\t" $5
 				s[i]=$2
 				e[i]=$3
 				c[i]=$1
-			}else
+				ss[i]=$6
+			}else{
+				if(ss[i] != $6){
+					err="strand conflict!"
+					exit -1
+				}
 				e[i]=$3
+				if(s[i] > $2)
+					s[i]=$2
+			}
 		}
 		END{
+			if(err != ""){
+				print err
+				exit 2
+			}
 			for(i in g)
-				print c[i] "\t" s[i] "\t" e[i] "\t" g[i]
+				print c[i] "\t" s[i] "\t" e[i] "\t" g[i] "\t" ss[i]
 		}' |\
 		sort -k1,1 -k2n,2 |\
 		gzip -c

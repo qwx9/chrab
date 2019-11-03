@@ -1,13 +1,17 @@
 #!/bin/sh -e
 
 bedsub(){
-	bedtools subtract -A -a $1 -b ${@:2} |\
-	gzip -c
+	f=$1
+	shift
+	bedtools subtract -A -a $f -b $* |\
+		gzip -c
 }
 
 bedinter(){
-	bedtools intersect -a $1 -b ${@:2} |\
-	gzip -c
+	f=$1
+	shift
+	bedtools intersect -a $f -b $* |\
+		gzip -c
 }
 
 cp huvec/h3k4me3.bed.gz prep/huvec.h3k4me3.bed.gz
@@ -15,11 +19,11 @@ cp huvec/h3k27ac.bed.gz prep/huvec.h3k27ac.bed.gz
 cp huvec/dhs.rep1.bed.gz prep/huvec.dhs.rep1.bed.gz
 
 # active promoters
-bedinter prep/h3k4me3.bed.gz prep/h3k27ac.bed.gz >prep/huvec.proa.prm.bed.gz
+bedinter prep/huvec.h3k4me3.bed.gz prep/huvec.h3k27ac.bed.gz >prep/huvec.proa.prm.bed.gz
 # active enhancers
-bedsub prep/h3k4me3.bed.gz prep/h3k27ac.bed.gz >prep/huvec.proa.enh.bed.gz
+bedsub prep/huvec.h3k4me3.bed.gz prep/huvec.h3k27ac.bed.gz >prep/huvec.proa.enh.bed.gz
 # open promoters/enhancers
-bedsub prep/dhs.rep1.bed.gz prep/h3k4me3.bed.gz prep/h3k27ac.bed.gz >prep/huvec.proa.open.bed.gz
+bedsub prep/huvec.dhs.rep1.bed.gz prep/huvec.h3k4me3.bed.gz prep/huvec.h3k27ac.bed.gz >prep/huvec.proa.open.bed.gz
 # inactive promoters/enhancers
 bedsub prep/hg19.promenh.gff.gz prep/huvec.proa.prm.bed.gz prep/huvec.proa.enh.bed.gz prep/huvec.proa.open.bed.gz >prep/huvec.prob.prm.enh.bed.gz
 

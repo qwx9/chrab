@@ -9,7 +9,7 @@ Requirements:
 - xargs (e.g. from findutils)
 - gzip
 - grep, sed
-- unix shell (tested with bash) and a coreutils implementation
+- unix shell (tested with bash, dash) and a coreutils implementation (tested with GNU coreutils)
 
 
 Installation

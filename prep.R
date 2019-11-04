@@ -135,9 +135,9 @@ mkgc5 <- function(f){
 		group_by(chr, start, end) %>%
 		summarize(n=sum(n), nt=sum(nt)) %>%
 		ungroup %>%
-		mutate(gc=n/nt) %>%
-		select(chr, start, end, gc, n, nt) %>%
-		arrange(chr, start) %>%
+		mutate(gc=n/nt, chr0=ifelse(nchar(chr) == 4 & substr(chr, 4, 4) %in% 0:9, paste0("chr0", substr(chr, 4, 4)), chr)) %>%
+		arrange(chr0, start) %>%
+		select(chr, start, end, gc, n, nt, -chr0) %>%
 		write.gzip(f)
 }
 

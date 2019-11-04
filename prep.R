@@ -129,12 +129,31 @@ mkgc5 <- function(f){
 			l[[i]] <- i
 		}
 	}
-	df %>%
+	chrom <- read.table("prep/hg19.txt", header=TRUE)
+	df <- df %>%
 		mutate(chr=as.character(l[chr])) %>%
-		filter(chr %in% u[grep("chr[1-9XY][0-9]?$", u)]) %>%
+		filter(chr %in% chrom$chrom) %>%
 		group_by(chr, start, end) %>%
 		summarize(n=sum(n), nt=sum(nt)) %>%
-		ungroup %>%
+		ungroup
+	ends <- df %>%
+		group_by(chr) %>%
+		summarize(len=max(end))
+	l <- unlist(lapply(chrom$chr, function(x) if(chrom[chrom$chrom==x,2] > ends[ends$chr==x,2]) as.character(x)))
+	df2 <- bind_rows(lapply(l, function(i){
+		a <- chrom[chrom$chrom == i,]
+		b <- ends[ends$chr == i,]
+		b <- data.frame(chr=factor(i, levels=levels(chrom$chrom)), start=b$len, end=b$len+100000, n=NA, nt=NA)
+		r <- b
+		while(r$end < a$size){
+			r$start <- r$end
+			r$end <- r$end + 100000
+			b <- rbind(b, r)
+		}
+		b
+	}))
+	df %>%
+		rbind(df2) %>%
 		mutate(gc=n/nt, chr0=ifelse(nchar(chr) == 4 & substr(chr, 4, 4) %in% 0:9, paste0("chr0", substr(chr, 4, 4)), chr)) %>%
 		arrange(chr0, start) %>%
 		select(chr, start, end, gc, n, nt, -chr0) %>%
@@ -211,8 +230,8 @@ mkgroseq <- function(f){
 mkconv <- function(){
 	l <- list(
 		list(f="prep/hg19.refseq.bed.gz", fn=mkrefseq),
-		list(f="prep/hg19w.hg19.gc5base.bed.gz", fn=mkgc5),
 		list(f="prep/hg19.txt", fn=mkchr),
+		list(f="prep/hg19w.hg19.gc5base.bed.gz", fn=mkgc5),
 		list(f="prep/ab.bed", fn=mkab),
 		list(f="prep/huvec.repseq.tsv", fn=mkhuvecrep),
 		list(f="prep/hg19.promenh.gff.gz", fn=mkpromenh),

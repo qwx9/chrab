@@ -27,5 +27,5 @@ ggscatter <- function(ab, var, pc1){
 ab <- read.table("tabs/aball.tsv.gz", header=TRUE)
 ggviolin(ab, "ngene")
 ggviolin(ab, "nact")
-for(i in colnames(ab)[-c(1:7, 9)])
+for(i in colnames(ab)[-c(1:6, 9)])
 	ggscatter(ab, i, "HUVEC")

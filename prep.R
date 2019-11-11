@@ -161,7 +161,7 @@ mkgc5 <- function(f){
 }
 
 mkchr <- function(f){
-	o <- src_mysql("hg19", "genome-mysql.cse.ucsc.edu", username="genome")
+	o <- src_mysql("hg19", "genome-euro-mysql.soe.ucsc.edu", username="genome")
 	t <- o %>%
 		tbl("chromInfo") %>%
 		select(chrom, size) %>%

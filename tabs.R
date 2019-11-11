@@ -56,3 +56,12 @@ ab %>%
 gfd <- gzfile("tabs/aball.tsv.gz", "w")
 write.table(ab, gfd, sep="\t", row.names=FALSE, quote=FALSE)
 close(gfd)
+
+for(i in unique(ab$class)){
+	gfd <- gzfile(paste0("cnt/hg19w.", i, ".bed.gz"), "w")
+	ab %>%
+		mutate(v=ifelse(class==i, 1, 0)) %>%
+		select(chr, start, end, v) %>%
+		write.table(gfd, sep="\t", row.names=FALSE, quote=FALSE, col.names=FALSE)
+	close(gfd)
+}

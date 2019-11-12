@@ -227,6 +227,19 @@ mkgroseq <- function(f){
 		write.gzip(f)
 }
 
+mksilencer <- function(f){
+	zfd <- unz("huvec/ovcharenko2019.supp.tab.s2.txt.zip", "Supplemental_Table_S2.txt")
+	read.table(zfd, skip=1) %>%
+		filter(row_number() %in% contains("HUVEC", vars=V1)) %>%
+		mutate(pos=strsplit(as.character(V2), ":|-"),
+			chr=sapply(pos, function(x) x[1]),
+			start=sapply(pos, function(x) x[2]),
+			end=sapply(pos, function(x) x[3])) %>%
+		select(chr, start, end) %>%
+		arrange(chr, as.integer(start)) %>%
+		write.gzip(f)
+}
+
 mkconv <- function(){
 	l <- list(
 		list(f="prep/hg19.refseq.bed.gz", fn=mkrefseq),
@@ -236,7 +249,8 @@ mkconv <- function(){
 		list(f="prep/huvec.repseq.tsv", fn=mkhuvecrep),
 		list(f="prep/hg19.promenh.gff.gz", fn=mkpromenh),
 		list(f="prep/hg19.prom.gff.gz", fn=mkprom),
-		list(f="prep/huvec.groseq.allrep.bed.gz", fn=mkgroseq)
+		list(f="prep/huvec.groseq.allrep.bed.gz", fn=mkgroseq),
+		list(f="prep/huvec.silencer.bed.gz", fn=mksilencer)
 	)
 	for(i in l)
 		if(file.access(i$f, 4) != 0)

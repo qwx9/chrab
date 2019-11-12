@@ -288,6 +288,11 @@ mkrepseq <- function(){
 	l <- foreach(f=f, n=n, .inorder=FALSE, .export="write.gzip") %dopar%
 		write.gzip(repmask[repmask$id %in% n,], f)
 	stopCluster(cl)
+
+	if(file.access("prep/huvec.repseq.l1.long.bed.gz", 4) != 0)
+		read.table("prep/huvec.repseq.l1.bed.gz") %>%
+			filter(V3-V2 > 5000) %>%
+			write.gzip("prep/huvec.repseq.l1.long.bed.gz")
 }
 
 mkconv()

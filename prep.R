@@ -257,6 +257,28 @@ mkconv <- function(){
 			i$fn(i$f)
 }
 
+mkchromhmm <- function(){
+	l <- c("1_Active_Promoter",
+		"2_Weak_Promoter",
+		"3_Poised_Promoter",
+		"4_Strong_Enhancer",
+		"5_Strong_Enhancer",
+		"6_Weak_Enhancer",
+		"7_Weak_Enhancer")
+	f <- paste0("prep/huvec.chromhmm.", tolower(sub("_", ".", sub("[0-9]+_", "", l))), ".bed.gz")
+	i <- which(file.access(f, 4) != 0)
+	if(length(i) != 0){
+		x <- read.table("hg19/wgEncodeBroadHmmHuvecHMM.bed.gz")
+		x <- sapply(i, function(i){
+			x %>%
+				filter(V4 == l[i]) %>%
+				select(V1, V2, V3) %>%
+				write.gzip(f[i])
+			NULL
+		})
+	}
+}
+
 mkrepseq <- function(){
 	repmask <- read.table("hg19/hg19.fa.out.gz", skip=2) %>%
 		select(chr=V5, start=V6, end=V7, id=V10)
@@ -296,4 +318,5 @@ mkrepseq <- function(){
 }
 
 mkconv()
+mkchromhmm()
 mkrepseq()

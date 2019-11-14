@@ -1,6 +1,26 @@
 require(dplyr)
 source("lib.R")
 
+write.counts <- function(x, file){
+	l <- colnames(x)
+	x <- sapply(seq_along(l), function(i){
+		if(i > 1){
+			i <- 1:i
+			l <- l[i]
+		}else{
+			l <- "."
+		}
+		x %>%
+			select(i) %>%
+			table(useNA="always") %>%
+			as.data.frame %>%
+			rename(count=Freq) %>%
+			arrange(!!!syms(l)) %>%
+			write.table(paste0("tabs/", file, ".by", length(i), ".tsv"),
+				sep="\t", row.names=FALSE, quote=FALSE)
+	})
+}
+
 addcol <- function(chr, f){
 	read.table(f) %>%
 		filter(V1 %in% unique(chr)) %>%
@@ -9,40 +29,26 @@ addcol <- function(chr, f){
 
 # generate a/b classes
 ab <- read.table("prep/ab.bed", header=TRUE) %>%
-	mutate(ngene=addcol(chr, "cnt/hg19w.hg19.refseq.bed.gz")) %>%
-	mutate(nact=addcol(chr, "cnt/hg19w.huvec.proa.genes.bed.gz")) %>%
-	mutate(class1=ifelse(HUVEC < 0, "B", "A"),
+	mutate(ngene=addcol(chr, "cnt/hg19w.hg19.refseq.bed.gz"),
+		nact=addcol(chr, "cnt/hg19w.huvec.proa.genes.bed.gz"),
+		class1=ifelse(HUVEC < 0, "B", "A"),
 		class2=ifelse(ngene >= 4, "highgenedensity", ifelse(ngene > 0, "normalgenedensity", "nogene")),
+		class2=factor(class2, levels=c("highgenedensity", "normalgenedensity", "nogene")),
 		class3=ifelse(nact > 0, "hasactive", "noactive"),
-		class=paste(class1, class2, AorBvec, class3, sep="_"))
+		class4=ifelse(HUVECnoflank < 0, "B", "A"),
+		class=paste(class1, class2, AorBvec, class3, sep="_"),
+		classF=paste(class4, class2, AorBvec, class3, sep="_"))
 
-as.data.frame(table(ab$class1, useNA="always")) %>%
-	select(type=Var1, count=Freq) %>%
-	arrange(type) %>%
-	filter(count != 0) %>%
-	write.table("tabs/bins.by1.tsv", sep="\t", row.names=FALSE, quote=FALSE)
-as.data.frame(table(ab$class1, ab$class2, useNA="always")) %>%
-	select(type=Var1, genedensity=Var2, count=Freq) %>%
-	mutate(genedensity=factor(genedensity, levels=levels(genedensity)[c(1,3,2)])) %>%
-	arrange(type, genedensity) %>%
-	filter(count != 0) %>%
-	write.table("tabs/bins.by2.tsv", sep="\t", row.names=FALSE, quote=FALSE)
-as.data.frame(table(ab$class1, ab$class2, ab$AorBvec, useNA="always")) %>%
-	select(type=Var1, genedensity=Var2, pc1=Var3, count=Freq) %>%
-	mutate(genedensity=factor(genedensity, levels=levels(genedensity)[c(1,3,2)])) %>%
-	arrange(type, genedensity, pc1) %>%
-	filter(count != 0) %>%
-	write.table("tabs/bins.by3.tsv", sep="\t", row.names=FALSE, quote=FALSE)
-as.data.frame(table(ab$class1, ab$class2, ab$AorBvec, ab$class3, useNA="always")) %>%
-	select(type=Var1, genedensity=Var2, pc1=Var3, active=Var4, count=Freq) %>%
-	mutate(genedensity=factor(genedensity, levels=levels(genedensity)[c(1,3,2)])) %>%
-	arrange(type, genedensity, pc1, active) %>%
-	filter(count != 0) %>%
-	write.table("tabs/bins.by4.tsv", sep="\t", row.names=FALSE, quote=FALSE)
+ab %>%
+	select(type=class1, genedensity=class2, pc1=AorBvec, active=class3) %>%
+	write.counts("bins")
+ab %>%
+	select(type=class4, genedensity=class2, pc1=AorBvec, active=class3) %>%
+	write.counts("bins.noflank")
 
 ab <- ab %>%
-	select(-class1, -class2, -class3)
-write.table(ab, "tabs/class.tsv", sep="\t", row.names=FALSE, quote=FALSE)
+	select(-class1, -class2, -class3, -class4)
+write.gzip(ab, "tabs/class.tsv.gz", TRUE)
 
 for(i in list.files("cnt")){
 	if(i %in% c("hg19w.hg19.refseq.bed.gz", "hg19w.huvec.proa.genes.bed.gz"))
@@ -51,14 +57,18 @@ for(i in list.files("cnt")){
 	ab <- ab %>%
 		mutate(!!s:=addcol(chr, paste0("cnt/", i)))
 }
-write.gzip(ab, "tabs/aball.tsv.gz")
+write.gzip(ab, "tabs/aball.tsv.gz", TRUE)
 ab %>%
 	select(-contains("repseq.only")) %>%
-	write.table("tabs/counts.tsv", sep="\t", row.names=FALSE, quote=FALSE)
+	write.gzip("tabs/counts.tsv.gz", TRUE)
 
 for(i in unique(ab$class)){
 	ab %>%
 		mutate(v=ifelse(class==i, 1, 0)) %>%
 		select(chr, start, end, v) %>%
 		write.gzip(paste0("cnt/hg19w.", i, ".bed.gz"))
+	ab %>%
+		mutate(v=ifelse(classF==i, 1, 0)) %>%
+		select(chr, start, end, v) %>%
+		write.gzip(paste0("cnt/hg19w.", i, ".noflank.bed.gz"))
 }

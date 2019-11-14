@@ -170,8 +170,14 @@ mkchr <- function(f){
 
 mkab <- function(f){
 	read_xlsx("gf/Table-AouBouAlways.xlsx", col_types="text") %>%
-		select(chr, start, end, AorBvec, HUVEC, IMR90) %>%
 		mutate(start=format(as.integer(start)-1, scientific=FALSE, trim=TRUE)) %>%
+		group_by(chr) %>%
+		mutate(sign=sign(as.numeric(HUVEC)), sign=ifelse(sign==0,1,sign),
+			trans=sign!=lead(sign), trans=ifelse(is.na(trans), FALSE, trans),
+			flank=trans | lead(trans, default=FALSE) | lag(trans, default=FALSE) | lag(trans, 2, default=FALSE)) %>%
+		ungroup %>%
+		mutate(HUVECnoflank=ifelse(flank, NA, HUVEC)) %>%
+		select(chr, start, end, AorBvec, HUVEC, HUVECnoflank, IMR90) %>%
 		write.table(f, sep="\t", quote=FALSE, row.names=FALSE)
 }
 

@@ -1,6 +1,7 @@
 require(dplyr)
 require(doParallel)
 require(readxl)
+source("lib.R")
 
 gzreadlines <- function(file, n, fn){
 	gfd <- gzfile(file, "r")
@@ -22,12 +23,6 @@ gzreadlines <- function(file, n, fn){
 	stopCluster(cl)
 	close(gfd)
 	bind_rows(l[sort.int(sapply(l, function(x) x$sq[1]), index.return=TRUE)$ix])
-}
-
-write.gzip <- function(x, file, ...){
-	gfd <- gzfile(file, "wb")
-	write.table(x, gfd, col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t", ...)
-	close(gfd)
 }
 
 cntpref <- function(x, g){

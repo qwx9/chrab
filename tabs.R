@@ -1,4 +1,5 @@
 require(dplyr)
+source("lib.R")
 
 addcol <- function(chr, f){
 	read.table(f) %>%
@@ -50,18 +51,14 @@ for(i in list.files("cnt")){
 	ab <- ab %>%
 		mutate(!!s:=addcol(chr, paste0("cnt/", i)))
 }
+write.gzip(ab, "tabs/aball.tsv.gz")
 ab %>%
 	select(-contains("repseq.only")) %>%
 	write.table("tabs/counts.tsv", sep="\t", row.names=FALSE, quote=FALSE)
-gfd <- gzfile("tabs/aball.tsv.gz", "w")
-write.table(ab, gfd, sep="\t", row.names=FALSE, quote=FALSE)
-close(gfd)
 
 for(i in unique(ab$class)){
-	gfd <- gzfile(paste0("cnt/hg19w.", i, ".bed.gz"), "w")
 	ab %>%
 		mutate(v=ifelse(class==i, 1, 0)) %>%
 		select(chr, start, end, v) %>%
-		write.table(gfd, sep="\t", row.names=FALSE, quote=FALSE, col.names=FALSE)
-	close(gfd)
+		write.gzip(paste0("cnt/hg19w.", i, ".bed.gz"))
 }

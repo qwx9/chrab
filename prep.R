@@ -284,17 +284,29 @@ mkrepseq <- function(){
 	repmask <- read.table("hg19/hg19.fa.out.gz", skip=2) %>%
 		select(chr=V5, start=V6, end=V7, id=V10)
 	repcor <- read.table("prep/huvec.repseq.tsv", header=TRUE)
+	psil <- read_xlsx("gf/Liste.ProtoSil.Forts-Etudiants-14nov2019.xlsx", col_types="text",
+		.name_repair=~gsub(" ", "_", .x)) %>%
+		select(4, 5) %>%
+		mutate(prob=liste_FINALE, subb=liste) %>%
+		filter(!row_number() %in% c(1,2))
+	psilprob <- data.frame(Name=psil$prob)
+	psilsubb <- data.frame(Name=psil$subb)
+	psilanyb <- data.frame(Name=c(psil$prob, psil$subb))
 
 	l <- list(
 		list(f="prep/huvec.repseq.ltrline.bed.gz", q=quote(repcor %>% filter(Class %in% c("LTR", "LINE")))),
 		list(f="prep/huvec.repseq.ltr.bed.gz", q=quote(repcor %>% filter(Class == "LTR"))),
 		list(f="prep/huvec.repseq.l1.bed.gz", q=quote(repcor %>% filter(Class == "LINE" & Family == "L1"))),
+		list(f="prep/huvec.repseq.prob.allcorb.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < 0))),
 		list(f="prep/huvec.repseq.prob.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01))),
 		list(f="prep/huvec.repseq.prob.ltrline.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class %in% c("LTR", "LINE")))),
 		list(f="prep/huvec.repseq.prob.ltr.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class == "LTR"))),
 		list(f="prep/huvec.repseq.prob.line.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class == "LINE"))),
 		list(f="prep/huvec.repseq.prob.sr.lc.sat.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class %in% c("Simple_repeat", "Low_complexity", "Satellite")))),
-		list(f="prep/huvec.repseq.proa.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.04)))
+		list(f="prep/huvec.repseq.proa.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.04))),
+		list(f="prep/huvec.repseq.psil.prob.bed.gz", q=quote(psilprob)),
+		list(f="prep/huvec.repseq.psil.subb.bed.gz", q=quote(psilsubb)),
+		list(f="prep/huvec.repseq.psil.anyb.bed.gz", q=quote(psilanyb))
 	)
 	f <- paste0("prep/huvec.repseq.only.",
 		gsub("\\(|\\)", "", gsub("/", "-", repcor$Name)), ".bed.gz")

@@ -22,13 +22,13 @@ To install project dependencies, run install.sh.
 Input data
 ==========
 
-A certain number of input files are necessary to run the analysis.
+A certain number of input files are necessary to run the analysis, and must be added manually.
 
 gf/Kassiotis-List.ORI.RepSeq.CorrB-Fourel.11july.xlsx: RepBase repeat counts in hg19 and correlation to A/B profile
 gf/Table-AouBouAlways.xlsx: A/B profile for several cell lines
+gf/Liste.ProtoSil.Forts-Etudiants-14nov2019.xlsx: Experimental lists of strong protosilencers
 
-Additional CSV files list the source data used in the analysis.
-These files are downloaded automatically.
+Additional CSV files list the source data used in the analysis, which are downloaded automatically.
 
 
 Usage

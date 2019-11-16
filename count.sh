@@ -58,6 +58,9 @@ zcat prep/huvec.chromhmm.6.weak_enhancer.bed.gz prep/huvec.chromhmm.7.weak_enhan
 	bedtools merge -i - |\
 	gzip -c >prep/huvec.chromhmm.all.weak.enhancers.bed.gz
 
+bedtools intersect -a prep/hg19.prom.gff.gz -b prep/huvec.chromhmm.all.active.promoters.bed.gz |\
+	gzip -c >prep/huvec.active.promoters.bed.gz
+
 # split hg19 into 100kb windows
 bedtools makewindows -g prep/hg19.txt -w 100000 >prep/hg19w.bed
 

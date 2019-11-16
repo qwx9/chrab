@@ -30,7 +30,7 @@ addcol <- function(chr, f){
 # generate a/b classes
 ab <- read.table("prep/ab.bed", header=TRUE) %>%
 	mutate(ngene=addcol(chr, "cnt/hg19.refseq.bed.gz"),
-		nact=addcol(chr, "cnt/huvec.chromhmm.all.active.promoters.bed.gz"),
+		nact=addcol(chr, "cnt/huvec.active.promoters.bed.gz"),
 		class1=ifelse(HUVEC < 0, "B", "A"),
 		class2=ifelse(ngene >= 4, "highgenedensity", ifelse(ngene > 0, "normalgenedensity", "nogene")),
 		class2=factor(class2, levels=c("highgenedensity", "normalgenedensity", "nogene")),
@@ -51,7 +51,7 @@ ab <- ab %>%
 write.gzip(ab, "tabs/class.tsv.gz", TRUE)
 
 for(i in list.files("cnt")){
-	if(i %in% c("hg19.refseq.bed.gz", "huvec.chromhmm.all.active.promoters.bed.gz"))
+	if(i %in% c("hg19.refseq.bed.gz", "huvec.active.promoters.bed.gz"))
 		next
 	s <- gsub("\\.bed\\.gz$", "", gsub("^cnt/[^\\.]+\\.", "", i))
 	ab <- ab %>%

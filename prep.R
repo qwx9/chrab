@@ -266,7 +266,7 @@ mkchromhmm <- function(){
 		"5_Strong_Enhancer",
 		"6_Weak_Enhancer",
 		"7_Weak_Enhancer")
-	f <- paste0("prep/huvec.chromhmm.", tolower(sub("_", ".", sub("[0-9]+_", "", l))), ".bed.gz")
+	f <- paste0("prep/huvec.chromhmm.", tolower(sub("_", ".", l)), ".bed.gz")
 	i <- which(file.access(f, 4) != 0)
 	if(length(i) != 0){
 		x <- read.table("hg19/wgEncodeBroadHmmHuvecHMM.bed.gz")

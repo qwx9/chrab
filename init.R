@@ -34,7 +34,8 @@ dirs <- c(
 	"tabs",
 	"prep/repseq",
 	"cnt/repseq",
-	"plot/repseq"
+	"plot/repseq",
+	"igv/repseq"
 )
 for(i in dirs)
 	dir.create(i, showWarnings=FALSE)

@@ -56,7 +56,7 @@ The run.sh script calls the various parts of the pipeline in order and aborts on
 
 - tabs.R:	generate count summary tables and split data into A/B classes and subclasses
 
-- bedgraph.sh:	generate bedgraph files for count visualization from all count data
+- bedgraph.R:	generate bedgraph files for count visualization from all count data
 
 - plot.R:	generate basic plots for all count data
 

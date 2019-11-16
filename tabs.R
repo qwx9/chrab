@@ -58,7 +58,7 @@ for(i in list.files("cnt", pattern="*.gz", full.names=TRUE)){
 		mutate(!!s:=addcol(chr, i))
 }
 write.gzip(ab, "tabs/counts.tsv.gz", TRUE)
-for(i in list.files("cnt/repseq", pattern="*.gz")){
+for(i in list.files("cnt/repseq", pattern="*.gz", full.names=TRUE)){
 	s <- gsub("\\.bed\\.gz$", "", gsub("^cnt/repseq/", "", i))
 	ab <- ab %>%
 		mutate(!!s:=addcol(chr, i))

@@ -3,12 +3,4 @@ hg19 repeatmasker output,ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/h
 hg19 known genes,ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/database/ncbiRefSeq.txt.gz,hg19/ncbiRefSeq.txt.gz
 hg19 ensembl lastest release regulation elements,ftp://ftp.ensembl.org/pub/grch37/release-98/regulation/homo_sapiens/homo_sapiens.GRCh37.Regulatory_Build.regulatory_features.20180925.gff.gz,hg19/homo_sapiens.GRCh37.Regulatory_Build.regulatory_features.20180925.gff.gz
 hg19 gc content,ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.gc5Base.wigVarStep.gz,hg19/hg19.gc5Base.wigVarStep.gz
-hg19 chromHMM tracks,ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeBroadHmm/wgEncodeBroadHmmGm12878HMM.bed.gz,hg19/wgEncodeBroadHmmGm12878HMM.bed.gz
-hg19 chromHMM tracks,ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeBroadHmm/wgEncodeBroadHmmH1hescHMM.bed.gz,hg19/wgEncodeBroadHmmH1hescHMM.bed.gz
-hg19 chromHMM tracks,ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeBroadHmm/wgEncodeBroadHmmHepg2HMM.bed.gz,hg19/wgEncodeBroadHmmHepg2HMM.bed.gz
-hg19 chromHMM tracks,ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeBroadHmm/wgEncodeBroadHmmHmecHMM.bed.gz,hg19/wgEncodeBroadHmmHmecHMM.bed.gz
-hg19 chromHMM tracks,ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeBroadHmm/wgEncodeBroadHmmHsmmHMM.bed.gz,hg19/wgEncodeBroadHmmHsmmHMM.bed.gz
 hg19 chromHMM tracks,ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeBroadHmm/wgEncodeBroadHmmHuvecHMM.bed.gz,hg19/wgEncodeBroadHmmHuvecHMM.bed.gz
-hg19 chromHMM tracks,ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeBroadHmm/wgEncodeBroadHmmK562HMM.bed.gz,hg19/wgEncodeBroadHmmK562HMM.bed.gz
-hg19 chromHMM tracks,ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeBroadHmm/wgEncodeBroadHmmNhekHMM.bed.gz,hg19/wgEncodeBroadHmmNhekHMM.bed.gz
-hg19 chromHMM tracks,ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeBroadHmm/wgEncodeBroadHmmNhlfHMM.bed.gz,hg19/wgEncodeBroadHmmNhlfHMM.bed.gz

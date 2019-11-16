@@ -50,17 +50,20 @@ ab <- ab %>%
 	select(-class1, -class2, -class3, -class4)
 write.gzip(ab, "tabs/class.tsv.gz", TRUE)
 
-for(i in list.files("cnt")){
+for(i in list.files("cnt", pattern="*.gz", full.names=TRUE)){
 	if(i %in% c("hg19.refseq.bed.gz", "huvec.active.promoters.bed.gz"))
 		next
-	s <- gsub("\\.bed\\.gz$", "", gsub("^cnt/[^\\.]+\\.", "", i))
+	s <- gsub("\\.bed\\.gz$", "", gsub("^cnt/", "", i))
 	ab <- ab %>%
-		mutate(!!s:=addcol(chr, paste0("cnt/", i)))
+		mutate(!!s:=addcol(chr, i))
+}
+write.gzip(ab, "tabs/counts.tsv.gz", TRUE)
+for(i in list.files("cnt/repseq", pattern="*.gz")){
+	s <- gsub("\\.bed\\.gz$", "", gsub("^cnt/repseq/", "", i))
+	ab <- ab %>%
+		mutate(!!s:=addcol(chr, i))
 }
 write.gzip(ab, "tabs/aball.tsv.gz", TRUE)
-ab %>%
-	select(-contains("repseq.only")) %>%
-	write.gzip("tabs/counts.tsv.gz", TRUE)
 
 for(i in unique(ab$class)){
 	ab %>%

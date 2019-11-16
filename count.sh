@@ -66,8 +66,8 @@ bedtools makewindows -g prep/hg19.txt -w 100000 >prep/hg19w.bed
 
 # count all elements (proa/prob/repseq) per 100kb window along hg19
 cd prep
-ls -1 *.gz |\
-	grep -v 'hg19\.gc5base\|groseq\.allrep' |\
+ls -1 *.gz repseq/*.gz |\
+	grep -v 'hg19\.gc\|groseq\.allrep' |\
 	xargs -I {} -P 8 bash -c \
 		'bedtools coverage -counts -a hg19w.bed -b {} | gzip -c > ../cnt/{}'
-cp hg19.gc5base.bed.gz ../cnt/hg19.gc5base.bed.gz
+cp hg19.gc.bed.gz ../cnt/hg19.gc.bed.gz

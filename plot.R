@@ -24,8 +24,10 @@ ggscatter <- function(ab, var, pc1){
 ab <- read.table("tabs/aball.tsv.gz", header=TRUE) %>%
 	select(-chr, -start, -end, -AorBvec)
 l <- colnames(ab)
-l <- l[grep("^(NA_|[AB]_|class|HUVEC|IMR90)", l, invert=TRUE)]
-f <- paste0("plot/", l, ".pdf")
+l2 <- l[grep("repseq\\.only", l)]
+l <- l[grep("^(NA_|[AB]_|class|HUVEC|IMR90|huvec\\.repseq\\.only)", l, invert=TRUE)]
+f <- c(paste0("plot/", l, ".pdf"), paste0("plot/repseq/", l2, ".pdf"))
+l <- c(l, l2)
 i <- which(file.access(f, 4) != 0)
 if(length(i) == 0)
 	return

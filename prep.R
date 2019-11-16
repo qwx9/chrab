@@ -245,7 +245,7 @@ mkconv <- function(){
 	l <- list(
 		list(f="prep/hg19.refseq.bed.gz", fn=mkrefseq),
 		list(f="prep/hg19.txt", fn=mkchr),
-		list(f="prep/hg19w.hg19.gc5base.bed.gz", fn=mkgc5),
+		list(f="prep/hg19.gc5base.bed.gz", fn=mkgc5),
 		list(f="prep/ab.bed", fn=mkab),
 		list(f="prep/huvec.repseq.tsv", fn=mkhuvecrep),
 		list(f="prep/hg19.promenh.gff.gz", fn=mkpromenh),

@@ -53,5 +53,5 @@ cd prep
 ls -1 *.gz |\
 	grep -v 'hg19\.gc5base\|groseq\.allrep' |\
 	xargs -I {} -P 8 bash -c \
-		'bedtools coverage -counts -a hg19w.bed -b {} | gzip -c > ../cnt/hg19w.{}'
-cp hg19w.hg19.gc5base.bed.gz ../cnt/
+		'bedtools coverage -counts -a hg19w.bed -b {} | gzip -c > ../cnt/{}'
+cp hg19.gc5base.bed.gz ../cnt/hg19.gc5base.bed.gz

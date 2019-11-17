@@ -58,7 +58,10 @@ for(i in list.files("cnt/repseq", pattern="*.gz", full.names=TRUE)){
 	ab <- ab %>%
 		mutate(!!s:=addcol(chr, i))
 }
-write.gzip(ab, "tabs/aball.tsv.gz", TRUE)
+ab %>%
+	select(-AorBvec, -IMR90) %>%
+	select(chr, start, end, HUVEC, HUVECnoflank, class, classF, everything()) %>%
+	write.gzip("tabs/aball.tsv.gz", TRUE)
 
 for(i in unique(ab$class)){
 	ab %>%

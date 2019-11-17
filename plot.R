@@ -5,9 +5,12 @@ require(gridExtra)
 require(doParallel)
 
 ggviolin <- function(ab, var, class){
+	n <- c(by(ab[,var], ab[,class], sum))
 	ggplot(ab, aes(!!sym(class), !!sym(var))) +
 		geom_violin(na.rm=TRUE) +
-		theme(axis.text.x=element_text(angle=90,vjust=-0.1))
+		theme(axis.text.x=element_text(angle=90, vjust=-0.1)) +
+		annotate("text", x=names(n), y=max(ab[,var]) + (max(nchar(n))-1)/.pt,
+			label=n, angle=90, size=3)
 }
 
 ggridge <- function(ab, var, class){
@@ -18,7 +21,8 @@ ggridge <- function(ab, var, class){
 
 ggscatter <- function(ab, var, pc1){
 	ggplot(ab, aes(!!sym(var), !!sym(pc1))) +
-		geom_hex(na.rm=TRUE)
+		geom_bin2d(na.rm=TRUE) +
+		scale_fill_gradientn(colors=c("blue", "red", "yellow"))
 }
 
 ab <- read.table("tabs/aball.tsv.gz", header=TRUE) %>%

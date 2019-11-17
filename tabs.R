@@ -27,37 +27,32 @@ addcol <- function(chr, f){
 		pull(V4)
 }
 
-# generate a/b classes
-ab <- read.table("prep/ab.bed", header=TRUE) %>%
-	mutate(ngene=addcol(chr, "cnt/hg19.refseq.bed.gz"),
-		nact=addcol(chr, "cnt/huvec.active.promoters.bed.gz"),
-		class1=ifelse(HUVEC < 0, "B", "A"),
-		class2=ifelse(ngene >= 4, "highgenedensity", ifelse(ngene > 0, "normalgenedensity", "nogene")),
+ab <- read.table("prep/ab.bed", header=TRUE)
+for(i in list.files("cnt", pattern="*.gz", full.names=TRUE)){
+	s <- gsub("\\.bed\\.gz$", "", gsub("^cnt/", "", i))
+	ab <- ab %>%
+		mutate(!!s:=addcol(chr, i))
+}
+ab <- ab %>%
+	mutate(class1=ifelse(HUVEC < 0, "B", "A"),
+		class2=ifelse(hg19.refseq >= 4, "highgenedensity", ifelse(hg19.refseq > 0, "normalgenedensity", "nogene")),
 		class2=factor(class2, levels=c("highgenedensity", "normalgenedensity", "nogene")),
-		class3=ifelse(nact > 0, "hasactive", "noactive"),
+		class3=ifelse(huvec.active.promoters > 0, "hasactive", "noactive"),
 		class4=ifelse(HUVECnoflank < 0, "B", "A"),
 		class=paste(class1, class2, AorBvec, class3, sep="_"),
 		classF=paste(class4, class2, AorBvec, class3, sep="_"))
-
 ab %>%
 	select(type=class1, genedensity=class2, pc1=AorBvec, active=class3) %>%
 	write.counts("bins")
 ab %>%
 	select(type=class4, genedensity=class2, pc1=AorBvec, active=class3) %>%
 	write.counts("bins.noflank")
-
 ab <- ab %>%
 	select(-class1, -class2, -class3, -class4)
-write.gzip(ab, "tabs/class.tsv.gz", TRUE)
+ab %>%
+	select(chr, start, end, HUVEC, HUVECnoflank, class, classF) %>%
+	write.gzip("tabs/class.tsv.gz", TRUE)
 
-for(i in list.files("cnt", pattern="*.gz", full.names=TRUE)){
-	if(i %in% c("hg19.refseq.bed.gz", "huvec.active.promoters.bed.gz"))
-		next
-	s <- gsub("\\.bed\\.gz$", "", gsub("^cnt/", "", i))
-	ab <- ab %>%
-		mutate(!!s:=addcol(chr, i))
-}
-write.gzip(ab, "tabs/counts.tsv.gz", TRUE)
 for(i in list.files("cnt/repseq", pattern="*.gz", full.names=TRUE)){
 	s <- gsub("\\.bed\\.gz$", "", gsub("^cnt/repseq/", "", i))
 	ab <- ab %>%

@@ -7,3 +7,4 @@ Rscript prep.R
 Rscript tabs.R
 Rscript bedgraph.R
 Rscript plot.R
+Rscript score.R

@@ -32,6 +32,7 @@ dirs <- c(
 	"cnt",
 	"plot",
 	"tabs",
+	"score",
 	"prep/repseq",
 	"cnt/repseq",
 	"plot/repseq",

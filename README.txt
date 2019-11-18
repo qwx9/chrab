@@ -60,6 +60,8 @@ The run.sh script calls the various parts of the pipeline in order and aborts on
 
 - plot.R:	generate basic plots for all count data
 
+- score.R:	generate predictive models and bedgraph and plots of predictions
+
 
 Used package versions
 =====================

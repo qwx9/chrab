@@ -33,6 +33,7 @@ for(i in list.files("cnt", pattern="*.gz", full.names=TRUE)){
 	ab <- ab %>%
 		mutate(!!s:=addcol(chr, i))
 }
+write.gzip(ab, "tabs/counts.tsv.gz", TRUE)
 ab <- ab %>%
 	mutate(class1=ifelse(HUVEC < 0, "B", "A"),
 		class2=ifelse(hg19.refseq >= 4, "highgenedensity", ifelse(hg19.refseq > 0, "normalgenedensity", "nogene")),

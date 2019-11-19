@@ -5,7 +5,11 @@ require(gridExtra)
 require(doParallel)
 
 ggviolin <- function(ab, var, class){
-	n <- c(by(ab[,var], ab[,class], sum))
+	n <- ab %>%
+		group_by(!!sym(class)) %>%
+		summarize(m=ifelse(typeof(!!sym(var)) == "integer",
+			sum(!!sym(var)), rep(NA)))
+	n <- setNames(n$m, as.character(pull(n, !!sym(class))))
 	ggplot(ab, aes(!!sym(class), !!sym(var))) +
 		geom_violin(na.rm=TRUE) +
 		theme(axis.text.x=element_text(angle=90, vjust=-0.1)) +
@@ -21,7 +25,7 @@ ggridge <- function(ab, var, class){
 
 ggscatter <- function(ab, var, pc1){
 	ggplot(ab, aes(!!sym(var), !!sym(pc1))) +
-		geom_bin2d(na.rm=TRUE) +
+		geom_hex(na.rm=TRUE) +
 		scale_fill_gradientn(colors=c("blue", "red", "yellow"))
 }
 
@@ -34,23 +38,28 @@ f <- c(paste0("plot/", l, ".pdf"), paste0("plot/repseq/", l2, ".pdf"))
 l <- c(l, l2)
 i <- which(file.access(f, 4) != 0)
 if(length(i) == 0)
-	return
+	quit()
 l <- l[i]
 f <- f[i]
+abf <- ab %>%
+	filter(!grepl("^NA_", class)) %>%
+	mutate(class=droplevels(class))
 abf <- lapply(l, function(x){
-	ab %>%
-		select(class, HUVEC, !!sym(x)) %>%
-		filter(!grepl("^NA_", class))
+	abf %>%
+		select(class, HUVEC, !!sym(x))
 })
+abnf <- ab %>%
+	filter(!grepl("^NA_", class)) %>%
+	mutate(class=droplevels(class))
 abnf <- lapply(l, function(x){
-	ab %>%
+	abnf %>%
 		select(classF, HUVECnoflank, !!sym(x)) %>%
 		filter(!grepl("^NA_", classF))
 })
 nc <- detectCores()
 cl <- makeCluster(nc)
 registerDoParallel(cl)
-l <- foreach(i=l, f=f, abf=abf, abnf=abnf, .inorder=FALSE, .packages=c("ggplot2", "ggridges", "gridExtra")) %dopar% {
+l <- foreach(i=l, f=f, abf=abf, abnf=abnf, .inorder=FALSE, .packages=c("ggplot2", "ggridges", "gridExtra", "dplyr")) %dopar% {
 	g1 <- ggviolin(abf, i, "class")
 	g2 <- ggviolin(abnf, i, "classF")
 	g3 <- ggridge(abf, i, "class")

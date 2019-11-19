@@ -29,7 +29,7 @@ mergenames(){
 			for(i in g)
 				print c[i] "\t" s[i] "\t" e[i] "\t" g[i] "\t" ss[i]
 		}' |\
-		sort -k1,1 -k2n,2 |\
+		sort -k1V,1 -k2n,2 |\
 		gzip -c
 }
 
@@ -41,6 +41,7 @@ cp huvec/h3k27ac.bed.gz prep/huvec.h3k27ac.bed.gz
 cp huvec/dhs.rep1.bed.gz prep/huvec.dhs.rep1.bed.gz
 
 bedtools merge -s -c 4,5,6 -o distinct,mean,distinct -i prep/huvec.groseq.allrep.bed.gz |\
+	sort -k1V,1 -k2n,2 |\
 	gzip -c >prep/huvec.groseq.mean.bed.gz
 bedtools map -c 5 -o mean -null NA -a prep/hg19w.bed -b prep/huvec.groseq.mean.bed.gz |\
 	gzip -c >prep/huvec.groseq.score.bed.gz

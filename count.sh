@@ -52,19 +52,16 @@ mergenames prep/huvec.refseq.inter.bed.gz >prep/huvec.active.genes.bed.gz
 
 zcat prep/huvec.chromhmm.1.active_promoter.bed.gz prep/huvec.chromhmm.2.weak_promoter.bed.gz |\
 	sort -k1V,1 -k2n,2 |\
-	bedtools merge -i - |\
-	gzip -c >prep/huvec.chromhmm.all.active.promoters.bed.gz
+	bedtools merge -c 4 -o collapse -i - |\
+	gzip -c >prep/huvec.chromhmm.any.active.promoters.bed.gz
 zcat prep/huvec.chromhmm.4.strong_enhancer.bed.gz prep/huvec.chromhmm.5.strong_enhancer.bed.gz |\
 	sort -k1V,1 -k2n,2 |\
-	bedtools merge -i - |\
-	gzip -c >prep/huvec.chromhmm.all.strong.enhancers.bed.gz
+	bedtools merge -c 4 -o collapse -i - |\
+	gzip -c >prep/huvec.chromhmm.any.strong.enhancers.bed.gz
 zcat prep/huvec.chromhmm.6.weak_enhancer.bed.gz prep/huvec.chromhmm.7.weak_enhancer.bed.gz |\
 	sort -k1V,1 -k2n,2 |\
-	bedtools merge -i - |\
-	gzip -c >prep/huvec.chromhmm.all.weak.enhancers.bed.gz
-
-bedtools intersect -a prep/hg19.prom.gff.gz -b prep/huvec.chromhmm.all.active.promoters.bed.gz |\
-	gzip -c >prep/huvec.active.promoters.bed.gz
+	bedtools merge -c 4 -o collapse -i - |\
+	gzip -c >prep/huvec.chromhmm.any.weak.enhancers.bed.gz
 
 # count all elements (proa/prob/repseq) per 100kb window along hg19
 cd prep

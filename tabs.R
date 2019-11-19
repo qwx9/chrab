@@ -38,7 +38,7 @@ ab <- ab %>%
 	mutate(class1=ifelse(HUVEC < 0, "B", "A"),
 		class2=ifelse(hg19.refseq >= 4, "highgenedensity", ifelse(hg19.refseq > 0, "normalgenedensity", "nogene")),
 		class2=factor(class2, levels=c("highgenedensity", "normalgenedensity", "nogene")),
-		class3=ifelse(huvec.active.promoters > 0, "hasactive", "noactive"),
+		class3=ifelse(huvec.chromhmm.any.active.promoters > 0, "hasactive", "noactive"),
 		class4=ifelse(HUVECnoflank < 0, "B", "A"),
 		class=paste(class1, class2, AorBvec, class3, sep="_"),
 		classF=paste(class4, class2, AorBvec, class3, sep="_"))

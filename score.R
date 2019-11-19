@@ -120,9 +120,9 @@ l <- lapply(seq_along(l), function(i){
 })
 if(file.access("score/summary.txt") != 0){
 	lapply(l, function(x){
-		data.frame(rsq=round(summary(x)$r.squared, 2),
-			rsqadj=round(summary(x)$adj.r.squared, 2),
-			predrsq=round(predrsq(x), 2),
+		data.frame(rsq=round(summary(x)$r.squared, 4),
+			rsqadj=round(summary(x)$adj.r.squared, 4),
+			predrsq=round(predrsq(x), 4),
 			vars=paste(names(x$coefficients)[-1], collapse=", "))
 	}) %>%
 		bind_rows %>%

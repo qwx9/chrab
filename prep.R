@@ -273,7 +273,8 @@ mkchromhmm <- function(){
 		x <- sapply(i, function(i){
 			x %>%
 				filter(V4 == l[i]) %>%
-				select(V1, V2, V3) %>%
+				mutate(V4=rep(sub("_.*", "", l[i]))) %>%
+				select(V1, V2, V3, V4) %>%
 				write.gzip(f[i])
 			NULL
 		})

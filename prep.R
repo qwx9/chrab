@@ -304,7 +304,7 @@ mkrepseq <- function(){
 		list(f="prep/huvec.repseq.prob.ltr.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class == "LTR"))),
 		list(f="prep/huvec.repseq.prob.line.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class == "LINE"))),
 		list(f="prep/huvec.repseq.prob.sr.lc.sat.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class %in% c("Simple_repeat", "Low_complexity", "Satellite")))),
-		list(f="prep/huvec.repseq.proa.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.04))),
+		list(f="prep/huvec.repseq.proa.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01))),
 		list(f="prep/huvec.repseq.psil.prob.bed.gz", q=quote(psilprob)),
 		list(f="prep/huvec.repseq.psil.subb.bed.gz", q=quote(psilsubb)),
 		list(f="prep/huvec.repseq.psil.anyb.bed.gz", q=quote(psilanyb))

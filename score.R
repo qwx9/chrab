@@ -1,5 +1,14 @@
 library(dplyr)
 
+press <- function(lm){
+	pred.res <- residuals(lm) / (1 - lm.influence(lm)$hat)
+	sum(pred.res ^ 2)
+}
+
+predrsq <- function(lm){
+	1 - press(lm) / sum(anova(lm)$"Sum Sq")
+}
+
 model <- function(ab, dir, expl){
 	dir.create(dir)
 	fx <- quote(paste0("HUVECnoflank ~", paste0(expl, collapse="+")))
@@ -34,6 +43,7 @@ model <- function(ab, dir, expl){
 		write.table(gfd,
 			col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t", append=TRUE)
 	close(gfd)
+	m
 }
 
 ab <- read.table("tabs/counts.tsv.gz", header=TRUE)
@@ -81,6 +91,10 @@ l <- list(
 	c(chromcounts, brepseq[[2]], additional[[2]]),
 	c(chromcounts, brepseq[[3]], additional[[2]]),
 	c(chromcounts, brepseq[[4]], additional[[2]]),
+	c(chromcounts, brepseq[[1]], additional),
+	c(chromcounts, brepseq[[2]], additional),
+	c(chromcounts, brepseq[[3]], additional),
+	c(chromcounts, brepseq[[4]], additional),
 	chromfeeling,
 	c(chromfeeling, brepseq[[1]]),
 	c(chromfeeling, brepseq[[2]]),
@@ -93,10 +107,27 @@ l <- list(
 	c(chromfeeling, brepseq[[1]], additional[[2]]),
 	c(chromfeeling, brepseq[[2]], additional[[2]]),
 	c(chromfeeling, brepseq[[3]], additional[[2]]),
-	c(chromfeeling, brepseq[[4]], additional[[2]])
+	c(chromfeeling, brepseq[[4]], additional[[2]]),
+	c(chromfeeling, brepseq[[1]], additional),
+	c(chromfeeling, brepseq[[2]], additional),
+	c(chromfeeling, brepseq[[3]], additional),
+	c(chromfeeling, brepseq[[4]], additional)
 )
 l <- lapply(l, unlist)
 l <- l[which(sapply(seq_along(l), function(i) file.access(paste0("score/m", i)) != 0))]
 l <- lapply(seq_along(l), function(i){
 	model(ab, paste0("score/m", i, "/"), unlist(l[[i]]))
 })
+if(file.access("score/summary.txt") != 0){
+	lapply(l, function(x){
+		data.frame(rsq=round(summary(x)$r.squared, 2),
+			rsqadj=round(summary(x)$adj.r.squared, 2),
+			predrsq=round(predrsq(x), 2),
+			vars=paste(names(x$coefficients)[-1], collapse=", "))
+	}) %>%
+		bind_rows %>%
+		mutate(model=paste0("m", row_number())) %>%
+		select(model, everything()) %>%
+		arrange(desc(rsqadj)) %>%
+		write.table("score/summary.txt", sep="\t", quote=FALSE, row.names=FALSE)
+}

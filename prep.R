@@ -295,20 +295,23 @@ mkrepseq <- function(){
 	psilanyb <- data.frame(Name=c(psil$prob, psil$subb))
 
 	l <- list(
-		list(f="prep/huvec.repseq.ltrline.bed.gz", q=quote(repcor %>% filter(Class %in% c("LTR", "LINE")))),
+		list(f="prep/huvec.repseq.te.bed.gz", q=quote(repcor %>% filter(Class %in% c("SINE", "RC", "SVA", "LTR", "LINE", "DNA")))),
 		list(f="prep/huvec.repseq.ltr.bed.gz", q=quote(repcor %>% filter(Class == "LTR"))),
 		list(f="prep/huvec.repseq.l1.bed.gz", q=quote(repcor %>% filter(Class == "LINE" & Family == "L1"))),
-		list(f="prep/huvec.repseq.prob.allcorb.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < 0))),
+		list(f="prep/huvec.repseq.l1.ltr.bed.gz", q=quote(repcor %>% filter(Class %in% c("LTR", "LINE")))),
+		list(f="prep/huvec.repseq.anycorb.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < 0))),
 		list(f="prep/huvec.repseq.prob.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01))),
-		list(f="prep/huvec.repseq.prob.ltrline.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class %in% c("LTR", "LINE")))),
-		list(f="prep/huvec.repseq.prob.ltr.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class == "LTR"))),
-		list(f="prep/huvec.repseq.prob.line.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class == "LINE"))),
+		list(f="prep/huvec.repseq.prob.te.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class %in% c("SINE", "RC", "SVA", "LTR", "LINE", "DNA")))),
+		list(f="prep/huvec.repseq.prob.nonte.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class %in% c("tRNA", "snRNA", "Simple_repeat", "scRNA", "Satellite", "rRNA", "Low_complexity")))),
 		list(f="prep/huvec.repseq.prob.sr.lc.sat.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class %in% c("Simple_repeat", "Low_complexity", "Satellite")))),
-		list(f="prep/huvec.repseq.proa.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01))),
-		list(f="prep/huvec.repseq.trna.bed.gz", q=quote(repcor %>% filter(Class == "tRNA"))),
+		list(f="prep/huvec.repseq.prob.ltr.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class == "LTR"))),
+		list(f="prep/huvec.repseq.prob.l1.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class == "LINE" & Family == "L1"))),
+		list(f="prep/huvec.repseq.prob.l1.ltr.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class %in% c("LTR", "LINE")))),
 		list(f="prep/huvec.repseq.psil.prob.bed.gz", q=quote(psilprob)),
-		list(f="prep/huvec.repseq.psil.subb.bed.gz", q=quote(psilsubb)),
-		list(f="prep/huvec.repseq.psil.anyb.bed.gz", q=quote(psilanyb))
+		list(f="prep/huvec.repseq.proa.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01))),
+		list(f="prep/huvec.repseq.proa.te.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01 & Class %in% c("SINE", "RC", "SVA", "LTR", "LINE", "DNA")))),
+		list(f="prep/huvec.repseq.proa.nonte.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01 & Class %in% c("tRNA", "snRNA", "Simple_repeat", "scRNA", "Satellite", "rRNA", "Low_complexity")))),
+		list(f="prep/huvec.repseq.trna.bed.gz", q=quote(repcor %>% filter(Class == "tRNA")))
 	)
 	f <- paste0("prep/repseq/huvec.repseq.only.",
 		gsub("\\(|\\)", "", gsub("/", "-", repcor$Name)), ".bed.gz")
@@ -326,10 +329,22 @@ mkrepseq <- function(){
 		write.gzip(repmask[repmask$id %in% n,], f)
 	stopCluster(cl)
 
-	if(file.access("prep/huvec.repseq.l1.long.bed.gz", 4) != 0)
+	if(file.access("prep/huvec.repseq.l1long.bed.gz", 4) != 0)
 		read.table("prep/huvec.repseq.l1.bed.gz") %>%
 			filter(V3-V2 > 5000) %>%
-			write.gzip("prep/huvec.repseq.l1.long.bed.gz")
+			write.gzip("prep/huvec.repseq.l1long.bed.gz")
+	if(file.access("prep/huvec.repseq.l1long.ltr.bed.gz", 4) != 0)
+		read.table("prep/huvec.repseq.l1.ltr.bed.gz") %>%
+			filter(V3-V2 > 5000) %>%
+			write.gzip("prep/huvec.repseq.l1long.ltr.bed.gz")
+	if(file.access("prep/huvec.repseq.prob.l1long.bed.gz", 4) != 0)
+		read.table("prep/huvec.repseq.prob.l1.bed.gz") %>%
+			filter(V3-V2 > 5000) %>%
+			write.gzip("prep/huvec.repseq.prob.l1long.bed.gz")
+	if(file.access("prep/huvec.repseq.prob.l1long.ltr.bed.gz", 4) != 0)
+		read.table("prep/huvec.repseq.prob.l1.ltr.bed.gz") %>%
+			filter(V3-V2 > 5000) %>%
+			write.gzip("prep/huvec.repseq.prob.l1long.ltr.bed.gz")
 }
 
 mkconv()

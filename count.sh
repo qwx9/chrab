@@ -55,6 +55,15 @@ zcat prep/huvec.chromhmm.1.active_promoter.bed.gz prep/huvec.chromhmm.2.weak_pro
 	sort -k1V,1 -k2n,2 |\
 	bedtools merge -c 4 -o collapse -i - |\
 	gzip -c >prep/huvec.chromhmm.any.active.promoters.bed.gz
+zcat prep/huvec.chromhmm.1.active_promoter.bed.gz prep/huvec.chromhmm.2.weak_promoter.bed.gz |\
+	sort -k1V,1 -k2n,2 |\
+	bedtools merge -d 1000 -c 4 -o collapse -i - >/tmp/bedtools.merge
+awk '$4 ~ /^[2,]+$/{ print $0 }' /tmp/bedtools.merge |\
+	gzip -c >prep/huvec.chromhmm.merged.weak.promoters.bed.gz
+awk '$4 !~ /^[2,]+$/{ print $0 }' /tmp/bedtools.merge |\
+	gzip -c >prep/huvec.chromhmm.merged.strong.promoters.bed.gz
+rm /tmp/bedtools.merge
+
 zcat prep/huvec.chromhmm.4.strong_enhancer.bed.gz prep/huvec.chromhmm.5.strong_enhancer.bed.gz |\
 	sort -k1V,1 -k2n,2 |\
 	bedtools merge -c 4 -o collapse -i - |\

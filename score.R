@@ -48,75 +48,84 @@ model <- function(ab, dir, expl){
 
 ab <- read.table("tabs/counts.tsv.gz", header=TRUE)
 
-chromcounts <- list(
-	"huvec.chromhmm.1.active_promoter",
-	"huvec.chromhmm.2.weak_promoter",
-	"huvec.chromhmm.4.strong_enhancer",
-	"huvec.chromhmm.5.strong_enhancer",
-	"huvec.chromhmm.6.weak_enhancer",
-	"huvec.chromhmm.7.weak_enhancer",
-	"huvec.chromhmm.3.poised_promoter",
-	"huvec.silencer"
-)
-chromfeeling <- list(
-	"huvec.h3k27ac",
-	"huvec.h3k4me3",
-	"huvec.dhs.rep1"
-)
-additional <- list(
-	"huvec.groseq.score",
-	"huvec.repseq.proa"
-)
-brepseq <- list(
-	"huvec.repseq.prob",
-	"huvec.repseq.prob.ltrline",
-	"huvec.repseq.prob.ltr",
+epiparms <- list(
 	list(
-		"huvec.repseq.psil.prob",
-		"huvec.repseq.prob.ltrline"
+		NULL
+	), list(
+		"huvec.chromhmm.merged.strong.promoters",
+		"huvec.chromhmm.merged.weak.promoters",
+		"huvec.chromhmm.any.strong.enhancers"
+	), list(
+		"huvec.chromhmm.merged.strong.promoters",
+		"huvec.chromhmm.merged.weak.promoters",
+		"huvec.chromhmm.any.strong.enhancers",
+		"huvec.chromhmm.3.poised_promoter",
+		"huvec.silencer"
+	), list(
+		"huvec.chromhmm.merged.strong.promoters",
+		"huvec.chromhmm.merged.weak.promoters",
+		"huvec.chromhmm.any.strong.enhancers",
+		"huvec.dhs.rep1"
+	), list(
+		"huvec.chromhmm.merged.strong.promoters",
+		"huvec.chromhmm.merged.weak.promoters",
+		"huvec.chromhmm.any.strong.enhancers",
+		"huvec.chromhmm.3.poised_promoter",
+		"huvec.silencer",
+		"huvec.dhs.rep1"
+	), list(
+		"huvec.h3k27ac",
+		"huvec.h3k4me3",
+		"huvec.dhs.rep1",
+		"huvec.silencer",
+		"huvec.groseq.score"
+	), list(
+		"huvec.h3k27ac",
+		"huvec.h3k4me3",
+		"huvec.dhs.rep1",
+		"huvec.silencer",
+		"huvec.groseq.score",
+		"huvec.chromhmm.3.poised_promoter"
+	), list(
+		"huvec.dhs.rep1"
+	)
+)
+seqparms <- list(
+	list(
+		NULL
+	), list(
+		"huvec.repseq.prob"
+	), list(
+		"huvec.repseq.prob.te"
+	), list(
+		"huvec.repseq.prob.ltr",
+		"huvec.repseq.prob.l1long",
+		"huvec.repseq.psil.prob"
+	), list(
+		"huvec.repseq.prob.ltr"
+	), list(
+		"huvec.repseq.proa",
+		"huvec.repseq.prob"
+	), list(
+		"huvec.repseq.proa.te",
+		"huvec.repseq.prob.te"
+	), list(
+		"huvec.repseq.proa.te",
+		"huvec.repseq.prob.ltr",
+		"huvec.repseq.prob.l1long",
+		"huvec.repseq.psil.prob"
+	), list(
+		"huvec.repseq.proa.te",
+		"huvec.repseq.prob.ltr"
 	)
 )
 
-l <- list(
-	chromcounts,
-	c(chromcounts, brepseq[[1]]),
-	c(chromcounts, brepseq[[2]]),
-	c(chromcounts, brepseq[[3]]),
-	c(chromcounts, brepseq[[4]]),
-	c(chromcounts, brepseq[[1]], additional[[1]]),
-	c(chromcounts, brepseq[[2]], additional[[1]]),
-	c(chromcounts, brepseq[[3]], additional[[1]]),
-	c(chromcounts, brepseq[[4]], additional[[1]]),
-	c(chromcounts, brepseq[[1]], additional[[2]]),
-	c(chromcounts, brepseq[[2]], additional[[2]]),
-	c(chromcounts, brepseq[[3]], additional[[2]]),
-	c(chromcounts, brepseq[[4]], additional[[2]]),
-	c(chromcounts, brepseq[[1]], additional),
-	c(chromcounts, brepseq[[2]], additional),
-	c(chromcounts, brepseq[[3]], additional),
-	c(chromcounts, brepseq[[4]], additional),
-	chromfeeling,
-	c(chromfeeling, brepseq[[1]]),
-	c(chromfeeling, brepseq[[2]]),
-	c(chromfeeling, brepseq[[3]]),
-	c(chromfeeling, brepseq[[4]]),
-	c(chromfeeling, brepseq[[1]], additional[[1]]),
-	c(chromfeeling, brepseq[[2]], additional[[1]]),
-	c(chromfeeling, brepseq[[3]], additional[[1]]),
-	c(chromfeeling, brepseq[[4]], additional[[1]]),
-	c(chromfeeling, brepseq[[1]], additional[[2]]),
-	c(chromfeeling, brepseq[[2]], additional[[2]]),
-	c(chromfeeling, brepseq[[3]], additional[[2]]),
-	c(chromfeeling, brepseq[[4]], additional[[2]]),
-	c(chromfeeling, brepseq[[1]], additional),
-	c(chromfeeling, brepseq[[2]], additional),
-	c(chromfeeling, brepseq[[3]], additional),
-	c(chromfeeling, brepseq[[4]], additional)
-)
-l <- lapply(l, unlist)
-l <- l[which(sapply(seq_along(l), function(i) file.access(paste0("score/m", i)) != 0))]
+l <- apply(expand.grid(epiparms, seqparms), 1, unlist)
+f <- apply(expand.grid(seq_along(epiparms)-1, seq_along(seqparms)-1), 1, function(x){
+	paste0("score/m", x[1], ".", x[2], "/")
+})
 l <- lapply(seq_along(l), function(i){
-	model(ab, paste0("score/m", i, "/"), unlist(l[[i]]))
+	model(ab, f[i], l[i])
 })
 if(file.access("score/summary.txt") != 0){
 	lapply(l, function(x){

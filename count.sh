@@ -43,8 +43,8 @@ cp huvec/dhs.rep1.bed.gz prep/huvec.dhs.rep1.bed.gz
 bedtools merge -s -c 4,5,6 -o distinct,mean,distinct -i prep/huvec.groseq.allrep.bed.gz |\
 	sort -k1V,1 -k2n,2 |\
 	gzip -c >prep/huvec.groseq.mean.bed.gz
-bedtools map -c 5 -o mean -null NA -a prep/hg19w.bed -b prep/huvec.groseq.mean.bed.gz |\
-	gzip -c >prep/huvec.groseq.score.bed.gz
+bedtools map -c 5 -o mean -null 0 -a prep/hg19w.bed -b prep/huvec.groseq.mean.bed.gz |\
+	gzip -c >cnt/huvec.groseq.score.bed.gz
 bedtools merge -s -d 1 -c 4,5,6 -o distinct,distinct,distinct -i prep/huvec.groseq.mean.bed.gz |\
 	gzip -c >prep/huvec.groseq.merged.bed.gz
 bedtools intersect -s -a prep/hg19.refseq.bed.gz -b prep/huvec.groseq.merged.bed.gz |\

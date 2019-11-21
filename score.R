@@ -124,8 +124,10 @@ l <- apply(expand.grid(epiparms, seqparms), 1, unlist)
 f <- apply(expand.grid(seq_along(epiparms)-1, seq_along(seqparms)-1), 1, function(x){
 	paste0("score/m", x[1], ".", x[2], "/")
 })
+l <- l[-1]
+f <- f[-1]
 l <- lapply(seq_along(l), function(i){
-	model(ab, f[i], l[i])
+	model(ab, f[i], as.character(unlist(l[i])))
 })
 if(file.access("score/summary.txt") != 0){
 	lapply(l, function(x){

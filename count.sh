@@ -64,6 +64,11 @@ awk '$4 !~ /^[2,]+$/{ print $0 }' /tmp/bedtools.merge |\
 	gzip -c >prep/huvec.chromhmm.merged.strong.promoters.bed.gz
 rm /tmp/bedtools.merge
 
+bedtools slop -b 2000 -g prep/hg19.txt -i prep/hg19.refseq.bed.gz |\
+	gzip -c >prep/_hg19.refseq.slop.bed.gz
+bedtools intersect -v -a prep/huvec.chromhmm.any.active.promoters.bed.gz -b prep/_hg19.refseq.slop.bed.gz |\
+	gzip -c >prep/_huvec.chromhmm.nogene.promoters.bed.gz
+
 zcat prep/huvec.chromhmm.4.strong_enhancer.bed.gz prep/huvec.chromhmm.5.strong_enhancer.bed.gz |\
 	sort -k1V,1 -k2n,2 |\
 	bedtools merge -c 4 -o collapse -i - |\

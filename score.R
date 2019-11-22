@@ -1,4 +1,6 @@
 library(dplyr)
+library(tidyr)
+library(ggplot2)
 
 press <- function(lm){
 	pred.res <- residuals(lm) / (1 - lm.influence(lm)$hat)
@@ -46,7 +48,28 @@ model <- function(ab, dir, expl){
 	m
 }
 
-ab <- read.table("tabs/counts.tsv.gz", header=TRUE)
+ggcor <- function(ab){
+	c <- cor(ab, use="complete.obs")
+	hc <- hclust(as.dist((1-c)/2))
+	c <- c[hc$order, hc$order]
+	write.table(c, "score/cor.txt", sep="\t", quote=FALSE)
+	c[lower.tri(c)] <- NA
+	pdf("score/cor.pdf", width=12.1, height=9.7)
+	g <- c %>%
+		as.data.frame %>%
+		mutate(grp=factor(row.names(.), levels=row.names(.))) %>%
+		gather(key, v, -grp, na.rm=TRUE, factor_key=TRUE) %>%
+		ggplot(aes(key, grp, fill=v, label=round(v,2))) +
+			geom_tile(color="white") +
+			scale_fill_gradient2(low="blue", high="red", mid="white",
+				midpoint=0, limit=c(-1,1), space="Lab",
+				name="Pearson\nCorrelation") +
+			theme(axis.text.x=element_text(angle=45, vjust=1, size=12, hjust=1)) +
+			coord_fixed() +
+			geom_text(color="black", size=2)
+	print(g)
+	dev.off()
+}
 
 epiparms <- list(
 	list(
@@ -120,25 +143,48 @@ seqparms <- list(
 	)
 )
 
+ab <- read.table("tabs/counts.tsv.gz", header=TRUE) %>%
+	select(chr, start, end, HUVEC, HUVECnoflank, !!!syms(unique(unlist(c(epiparms, seqparms)))))
+ab[,6:ncol(ab)] <- apply(ab[,6:ncol(ab)], 2, function(x) x / max(x))
+
+ggcor(ab[,-c(1:3,5)])
+
 l <- apply(expand.grid(epiparms, seqparms), 1, unlist)
-f <- apply(expand.grid(seq_along(epiparms)-1, seq_along(seqparms)-1), 1, function(x){
-	paste0("score/m", x[1], ".", x[2], "/")
+n <- apply(expand.grid(seq_along(epiparms)-1, seq_along(seqparms)-1), 1, function(x){
+	paste0("m", x[1], ".", x[2])
 })
+f <- paste0("score/", n, "/")
 l <- l[-1]
+n <- n[-1]
 f <- f[-1]
+
 l <- lapply(seq_along(l), function(i){
 	model(ab, f[i], as.character(unlist(l[i])))
 })
-if(file.access("score/summary.txt") != 0){
-	lapply(l, function(x){
-		data.frame(rsq=round(summary(x)$r.squared, 4),
-			rsqadj=round(summary(x)$adj.r.squared, 4),
-			predrsq=round(predrsq(x), 4),
-			vars=paste(names(x$coefficients)[-1], collapse=", "))
-	}) %>%
-		bind_rows %>%
-		mutate(model=paste0("m", row_number())) %>%
-		select(model, everything()) %>%
-		arrange(desc(rsqadj)) %>%
-		write.table("score/summary.txt", sep="\t", quote=FALSE, row.names=FALSE)
-}
+lapply(l, function(x){
+	data.frame(rsq=round(summary(x)$r.squared, 4),
+		rsqadj=round(summary(x)$adj.r.squared, 4),
+		predrsq=round(predrsq(x), 4),
+		vars=paste(names(x$coefficients)[-1], collapse=", "))
+}) %>%
+	bind_rows %>%
+	mutate(model=n) %>%
+	select(model, everything()) %>%
+	arrange(desc(rsqadj)) %>%
+	write.table("score/summary.txt", sep="\t", quote=FALSE, row.names=FALSE)
+
+abz <- ab %>%
+	select(-(1:5)) %>%
+	filter(rep(FALSE))
+l %>%
+	sapply(function(x) data.frame(t(x$coefficients[-1]))) %>%
+	lapply(function(x) full_join(abz, x, by=colnames(x))) %>%
+	bind_rows %>%
+	mutate(model=n) %>%
+	select(model, everything()) %>%
+	write.table("score/params.txt", sep="\t", quote=FALSE, row.names=FALSE)
+
+ab %>%
+	select(-chr, -start, -end, -HUVECnoflank) %>%
+	rename(eigenvector=HUVEC) %>%
+	write.csv(file="score/params.csv", quote=FALSE, row.names=FALSE)

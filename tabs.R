@@ -64,6 +64,18 @@ ab %>%
 	select(chr, start, end, HUVEC, HUVECnoflank, class, classF, everything()) %>%
 	write.gzip("tabs/aball.tsv.gz", TRUE)
 
+n <- colnames(ab)
+n <- n[grep("^(NA_|[AB]_|AorB|class|chr|start|end)", n, invert=TRUE)]
+bind_rows(lapply(n, function(n){
+	x <- ab[,n]
+	y <- na.omit(x)
+	data.frame(min=min(y), max=max(y), mean=mean(y), sd=sd(y), median=median(y),
+		q1=quantile(y, 0.25), q3=quantile(y, 0.75), na=sum(is.na(x)))
+})) %>%
+	mutate(parm=n) %>%
+	select(parm, everything()) %>%
+	write.gzip("tabs/parms.tsv.gz", TRUE)
+
 for(i in unique(ab$class)){
 	ab %>%
 		mutate(v=ifelse(class==i, 1, 0)) %>%

@@ -1,7 +1,8 @@
 require(dplyr)
+require(grid)
+require(gridExtra)
 require(ggplot2)
 require(ggridges)
-require(gridExtra)
 require(doParallel)
 
 ggviolin <- function(ab, var, class){
@@ -24,9 +25,17 @@ ggridge <- function(ab, var, class){
 }
 
 ggscatter <- function(ab, var, pc1){
-	ggplot(ab, aes(!!sym(var), !!sym(pc1))) +
+	n <- sum(ab[,var])
+	Ea <- round(sum(ab[ab$class2=="A",var]) / n * 100, 1)
+	EA <- round(sum(ab[ab$class3=="A",var], na.rm=TRUE) / n * 100, 1)
+	Eb <- round(sum(ab[ab$class2=="B",var]) / n * 100, 1)
+	EB <- round(sum(ab[ab$class3=="B",var], na.rm=TRUE) / n * 100, 1)
+	s <- paste0("A Enrichment: ", Ea, "%, AlwaysA: ", EA, "%\n",
+		"B Enrichment: ", Eb, "%, AlwaysB: ", EB, "%\n")
+	g <- ggplot(ab, aes(!!sym(var), !!sym(pc1))) +
 		geom_hex(na.rm=TRUE) +
 		scale_fill_gradientn(colors=c("blue", "red", "yellow"))
+	grid.arrange(g, top=textGrob(s))
 }
 
 ab <- read.table("tabs/aball.tsv.gz", header=TRUE) %>%
@@ -43,23 +52,30 @@ l <- l[i]
 f <- f[i]
 abf <- ab %>%
 	filter(!grepl("^NA_", class)) %>%
-	mutate(class=droplevels(class))
+	mutate(class=droplevels(class),
+		class2=ifelse(grepl("^A_", class), "A", "B"),
+		class3=ifelse(grepl("^A_.*AlwaysA", class), "A",
+			ifelse(grepl("^B_.*AlwaysB", class), "B",
+			NA)))
 abf <- lapply(l, function(x){
 	abf %>%
-		select(class, HUVEC, !!sym(x))
+		select(class, class2, class3, HUVEC, !!sym(x))
 })
 abnf <- ab %>%
-	filter(!grepl("^NA_", class)) %>%
-	mutate(class=droplevels(class))
+	filter(!grepl("^NA_", classF)) %>%
+	mutate(classF=droplevels(classF),
+		class2=ifelse(grepl("^A_", classF), "A", "B"),
+		class3=ifelse(grepl("^A_.*AlwaysA", classF), "A",
+			ifelse(grepl("^B_.*AlwaysB", classF), "B",
+			NA)))
 abnf <- lapply(l, function(x){
 	abnf %>%
-		select(classF, HUVECnoflank, !!sym(x)) %>%
-		filter(!grepl("^NA_", classF))
+		select(classF, class2, class3, HUVECnoflank, !!sym(x))
 })
 nc <- detectCores()
 cl <- makeCluster(nc)
 registerDoParallel(cl)
-l <- foreach(i=l, f=f, abf=abf, abnf=abnf, .inorder=FALSE, .packages=c("ggplot2", "ggridges", "gridExtra", "dplyr")) %dopar% {
+l <- foreach(i=l, f=f, abf=abf, abnf=abnf, .inorder=FALSE, .packages=c("ggplot2", "ggridges", "grid", "gridExtra", "dplyr")) %dopar% {
 	g1 <- ggviolin(abf, i, "class")
 	g2 <- ggviolin(abnf, i, "classF")
 	g3 <- ggridge(abf, i, "class")

@@ -33,6 +33,9 @@ for(i in list.files("cnt", pattern="*.gz", full.names=TRUE)){
 	ab <- ab %>%
 		mutate(!!s:=addcol(chr, i))
 }
+cap <- quantile(ab$huvec.groseq.score, 0.75) + 5 * IQR(ab$huvec.groseq.score)
+ab <- ab %>%
+        mutate(huvec.groseq.capped=ifelse(huvec.groseq.score > cap, cap, huvec.groseq.score))
 write.gzip(ab, "tabs/counts.tsv.gz", TRUE)
 ab <- ab %>%
 	mutate(class1=ifelse(HUVEC < 0, "B", "A"),

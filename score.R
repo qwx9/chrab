@@ -101,13 +101,13 @@ epiparms <- list(
 		"huvec.h3k4me3",
 		"huvec.dhs.rep1",
 		"huvec.silencer",
-		"huvec.groseq.score"
+		"huvec.groseq.capped"
 	), list(
 		"huvec.h3k27ac",
 		"huvec.h3k4me3",
 		"huvec.dhs.rep1",
 		"huvec.silencer",
-		"huvec.groseq.score",
+		"huvec.groseq.capped",
 		"huvec.chromhmm.3.poised_promoter"
 	), list(
 		"huvec.dhs.rep1"

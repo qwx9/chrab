@@ -142,12 +142,46 @@ seqparms <- list(
 	), list(
 		"huvec.repseq.proa.te",
 		"huvec.repseq.prob.ltr"
+	), list(
+		"hg19.refseq"
+	), list(
+		"hg19.gc"
+	), list(
+		"huvec.repseq.proa"
+	), list(
+		"huvec.repseq.proa",
+		"hg19.refseq"
+	), list(
+		"huvec.repseq.proa",
+		"huvec.repseq.prob",
+		"hg19.refseq"
+	), list(
+		"hg19.refseq",
+		"hg19.gc"
+	), list(
+		"huvec.repseq.proa",
+		"huvec.repseq.prob",
+		"hg19.gc"
+	), list(
+		"huvec.repseq.proa.nonte",
+		"huvec.repseq.prob.sr.lc.sat"
+	), list(
+		"huvec.repseq.proa.nonte",
+		"huvec.repseq.prob"
+	), list(
+		"huvec.repseq.proa",
+		"huvec.repseq.prob.sr.lc.sat"
+	), list(
+		"huvec.repseq.proa.te",
+		"huvec.repseq.proa.nonte",
+		"huvec.repseq.prob.te",
+		"huvec.repseq.prob.sr.lc.sat"
 	)
 )
 
 ab <- read.table("tabs/counts.tsv.gz", header=TRUE) %>%
 	select(chr, start, end, HUVEC, HUVECnoflank, !!!syms(unique(unlist(c(epiparms, seqparms)))))
-ab[,6:ncol(ab)] <- apply(ab[,6:ncol(ab)], 2, function(x) x / max(x))
+ab[,6:ncol(ab)] <- apply(ab[,6:ncol(ab)], 2, function(x) x / max(x, na.rm=TRUE))
 
 ab %>%
 	select(-chr, -start, -end, -HUVECnoflank) %>%

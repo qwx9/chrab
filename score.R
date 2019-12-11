@@ -1,6 +1,7 @@
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(doParallel)
 
 press <- function(lm){
 	pred.res <- residuals(lm) / (1 - lm.influence(lm)$hat)
@@ -11,8 +12,9 @@ predrsq <- function(lm){
 	1 - press(lm) / sum(anova(lm)$"Sum Sq")
 }
 
-model <- function(ab, dir, expl){
+model <- function(ab, dir){
 	dir.create(dir)
+	expl <- colnames(ab)[-c(1:5)]
 	fx <- quote(paste0("HUVECnoflank ~", paste0(expl, collapse="+")))
 	m <- lm(eval(fx), ab)
 	sink(paste0(dir, "summary.txt"))
@@ -147,6 +149,11 @@ ab <- read.table("tabs/counts.tsv.gz", header=TRUE) %>%
 	select(chr, start, end, HUVEC, HUVECnoflank, !!!syms(unique(unlist(c(epiparms, seqparms)))))
 ab[,6:ncol(ab)] <- apply(ab[,6:ncol(ab)], 2, function(x) x / max(x))
 
+ab %>%
+	select(-chr, -start, -end, -HUVECnoflank) %>%
+	rename(eigenvector=HUVEC) %>%
+	write.csv(file="score/params.csv", quote=FALSE, row.names=FALSE)
+
 ggcor(ab[,-c(1:3,5)])
 
 l <- apply(expand.grid(epiparms, seqparms), 1, unlist)
@@ -157,34 +164,35 @@ f <- paste0("score/", n, "/")
 l <- l[-1]
 n <- n[-1]
 f <- f[-1]
-
-l <- lapply(seq_along(l), function(i){
-	model(ab, f[i], as.character(unlist(l[i])))
+abl <- lapply(l, function(x){
+	select(ab, chr, start, end, HUVEC, HUVECnoflank, !!!syms(as.character(x)))
 })
-lapply(l, function(x){
-	data.frame(rsq=round(summary(x)$r.squared, 4),
-		rsqadj=round(summary(x)$adj.r.squared, 4),
-		predrsq=round(predrsq(x), 4),
-		vars=paste(names(x$coefficients)[-1], collapse=", "))
-}) %>%
+
+cl <- makeCluster(detectCores())
+registerDoParallel(cl)
+l <- foreach(ab=abl, f=f, n=n, .multicombine=TRUE, .inorder=FALSE, .packages=c("ggplot2", "dplyr")) %dopar% {
+	m <- model(ab, f)
+	list(data.frame(model=as.character(n),
+		rsq=round(summary(m)$r.squared, 4),
+		rsqadj=round(summary(m)$adj.r.squared, 4),
+		predrsq=round(predrsq(m), 4),
+		vars=paste(names(m$coefficients)[-1], collapse=", "),
+		stringsAsFactors=FALSE),
+		data.frame(model=n, as.list(m$coefficients[-1]),
+		stringsAsFactors=FALSE))
+}
+stopCluster(cl)
+
+lapply(l, function(x) x[[1]]) %>%
 	bind_rows %>%
-	mutate(model=n) %>%
-	select(model, everything()) %>%
 	arrange(desc(rsqadj)) %>%
 	write.table("score/summary.txt", sep="\t", quote=FALSE, row.names=FALSE)
 
 abz <- ab %>%
-	select(-(1:5)) %>%
-	filter(rep(FALSE))
-l %>%
-	sapply(function(x) data.frame(t(x$coefficients[-1]))) %>%
-	lapply(function(x) full_join(abz, x, by=colnames(x))) %>%
-	bind_rows %>%
-	mutate(model=n) %>%
+	mutate(model="") %>%
 	select(model, everything()) %>%
+	select(-chr, -start, -end, -HUVEC, -HUVECnoflank) %>%
+	filter(rep(FALSE))
+lapply(l, function(x) full_join(abz, x[[2]], by=colnames(x[[2]]))) %>%
+	bind_rows %>%
 	write.table("score/params.txt", sep="\t", quote=FALSE, row.names=FALSE)
-
-ab %>%
-	select(-chr, -start, -end, -HUVECnoflank) %>%
-	rename(eigenvector=HUVEC) %>%
-	write.csv(file="score/params.csv", quote=FALSE, row.names=FALSE)

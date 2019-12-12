@@ -27,14 +27,37 @@ model <- function(ab, dir, name){
 	plot(m)
 	dev.off()
 
-	e <- sapply(seq_along(expl), function(i) ab[,expl[i]] * m$coefficients[1+i])
-	v <- apply(e, 1, function(x) m$coefficients[1] + sum(x))
+	pdf(paste0(dir, "res.vs.fitted.pdf"), width=12.1, height=9.7)
+	g <- data.frame(Fitted=m$fitted.values, Residuals=m$residuals) %>%
+		ggplot(aes(Fitted, Residuals)) +
+			geom_point(na.rm=TRUE, color="darkblue", alpha=0.2, shape=20) +
+			geom_smooth(se=FALSE, color="red", size=0.4) +
+			ggtitle("Model residuals versus fitted values")
+	print(g)
+	dev.off()
+
+	pdf(paste0(dir, "qqnorm.pdf"), width=12.1, height=9.7)
+	g <- data.frame(Residuals=m$residuals) %>%
+		ggplot(aes(sample=Residuals)) +
+			stat_qq_line() +
+			stat_qq(color="darkblue", size=0.7) +
+			ggtitle("Quantile-quantile plot of residuals") +
+			xlab("Theoretical normal distribution quantiles") +
+			ylab("Standardized residuals")
+	print(g)
+	dev.off()
+
+	pred <- ab %>%
+		mutate(HUVECnoflank=HUVEC) %>%
+		select(-HUVEC)
+	v <- predict(m, pred)
+
 	pdf(paste0(dir, "obs.vs.fitted.pdf"), width=12.1, height=9.7)
-	g <- ab %>%
-		rename(Observed=HUVEC) %>%
+	g <- pred %>%
+		rename(Observed=HUVECnoflank) %>%
 		mutate(Fitted=v) %>%
 		ggplot(aes(Fitted, Observed)) +
-			geom_point(na.rm=TRUE, color="darkblue", alpha=0.1, shape=20) +
+			geom_point(na.rm=TRUE, color="darkblue", alpha=0.2, shape=20) +
 			geom_smooth(method="lm", na.rm=TRUE, se=FALSE, color="red", size=0.4) +
 			ggtitle(paste0("Observed eigenvector values versus values predicted by model ",
 				name, " (R²adj=", round(summary(m)$adj.r.squared, 2), ")"))

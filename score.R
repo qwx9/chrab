@@ -12,18 +12,35 @@ predrsq <- function(lm){
 	1 - press(lm) / sum(anova(lm)$"Sum Sq")
 }
 
-model <- function(ab, dir){
+model <- function(ab, dir, name){
 	dir.create(dir)
 	expl <- colnames(ab)[-c(1:5)]
 	fx <- quote(paste0("HUVECnoflank ~", paste0(expl, collapse="+")))
 	m <- lm(eval(fx), ab)
+
 	sink(paste0(dir, "summary.txt"))
 	print(summary(m))
 	sink()
+
 	pdf(paste0(dir, "plots.pdf"), width=12.1, height=9.7)
 	layout(matrix(c(1,2,3,4),2,2))
 	plot(m)
 	dev.off()
+
+	e <- sapply(seq_along(expl), function(i) ab[,expl[i]] * m$coefficients[1+i])
+	v <- apply(e, 1, function(x) m$coefficients[1] + sum(x))
+	pdf(paste0(dir, "obs.vs.fitted.pdf"), width=12.1, height=9.7)
+	g <- ab %>%
+		rename(Observed=HUVEC) %>%
+		mutate(Fitted=v) %>%
+		ggplot(aes(Fitted, Observed)) +
+			geom_point(na.rm=TRUE, color="darkblue", alpha=0.1, shape=20) +
+			geom_smooth(method="lm", na.rm=TRUE, se=FALSE, color="red", size=0.4) +
+			ggtitle(paste0("Observed eigenvector values versus values predicted by model ",
+				name, " (R²adj=", round(summary(m)$adj.r.squared, 2), ")"))
+	print(g)
+	dev.off()
+
 	gfd <- gzfile(paste0(dir, "noflank.bedgraph.gz"), "wb")
 	cat(paste0("track type=bedGraph visibility=full",
 		"color=200,100,0 altColor=0,100,200 priority=20 height=200 name=", dir, "noflank\n"),
@@ -35,18 +52,19 @@ model <- function(ab, dir){
 		write.table(gfd,
 			col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t", append=TRUE)
 	close(gfd)
+
 	gfd <- gzfile(paste0(dir, "full.bedgraph.gz"), "wb")
 	cat(paste0("track type=bedGraph visibility=full",
 		"color=200,100,0 altColor=0,100,200 priority=20 height=200 name=", dir, "full\n"),
 		file=gfd)
-	e <- sapply(seq_along(expl), function(i) ab[,expl[i]] * m$coefficients[1+i])
 	ab %>%
-		mutate(v=apply(e, 1, function(x) m$coefficients[1] + sum(x))) %>%
+		mutate(v=v) %>%
 		filter(!is.na(HUVEC)) %>%
 		select(chr, start, end, v) %>%
 		write.table(gfd,
 			col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t", append=TRUE)
 	close(gfd)
+
 	m
 }
 
@@ -205,7 +223,7 @@ abl <- lapply(l, function(x){
 cl <- makeCluster(detectCores())
 registerDoParallel(cl)
 l <- foreach(ab=abl, f=f, n=n, .multicombine=TRUE, .inorder=FALSE, .packages=c("ggplot2", "dplyr")) %dopar% {
-	m <- model(ab, f)
+	m <- model(ab, f, n)
 	list(data.frame(model=as.character(n),
 		rsq=round(summary(m)$r.squared, 4),
 		rsqadj=round(summary(m)$adj.r.squared, 4),

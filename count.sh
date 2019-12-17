@@ -1,38 +1,5 @@
 #!/bin/sh -e
 
-mergenames(){
-	gunzip -c $* |\
-		awk '
-		{
-			i=$1$4
-			if(e[i]==""){
-				g[i]=$4 "\t" $5
-				s[i]=$2
-				e[i]=$3
-				c[i]=$1
-				ss[i]=$6
-			}else{
-				if(ss[i] != $6){
-					err="strand conflict!"
-					exit -1
-				}
-				e[i]=$3
-				if(s[i] > $2)
-					s[i]=$2
-			}
-		}
-		END{
-			if(err != ""){
-				print err
-				exit 2
-			}
-			for(i in g)
-				print c[i] "\t" s[i] "\t" e[i] "\t" g[i] "\t" ss[i]
-		}' |\
-		sort -k1V,1 -k2n,2 |\
-		gzip -c
-}
-
 # split hg19 into 100kb windows
 bedtools makewindows -g prep/hg19.txt -w 100000 >prep/hg19w.bed
 
@@ -47,9 +14,6 @@ bedtools map -c 5 -o mean -null 0 -a prep/hg19w.bed -b prep/huvec.groseq.mean.be
 	gzip -c >cnt/huvec.groseq.score.bed.gz
 bedtools merge -s -d 1 -c 4,5,6 -o distinct,distinct,distinct -i prep/huvec.groseq.mean.bed.gz |\
 	gzip -c >prep/huvec.groseq.merged.bed.gz
-bedtools intersect -s -a prep/hg19.refseq.bed.gz -b prep/huvec.groseq.merged.bed.gz |\
-	gzip -c >prep/huvec.refseq.inter.bed.gz
-mergenames prep/huvec.refseq.inter.bed.gz >prep/huvec.active.genes.bed.gz
 
 zcat prep/huvec.chromhmm.1.active_promoter.bed.gz prep/huvec.chromhmm.2.weak_promoter.bed.gz |\
 	sort -k1V,1 -k2n,2 |\

@@ -80,7 +80,7 @@ abnf <- lapply(l, function(x){
 nc <- detectCores()
 cl <- makeCluster(nc)
 registerDoParallel(cl)
-l <- foreach(i=l, f=f, abf=abf, abnf=abnf, .inorder=FALSE, .packages=c("ggplot2", "ggridges", "grid", "gridExtra", "dplyr")) %dopar% {
+l <- foreach(i=l, f=f, abf=abf, abnf=abnf, .inorder=FALSE, .multicombine=TRUE, .packages=c("ggplot2", "ggridges", "grid", "gridExtra", "dplyr")) %dopar% {
 	g1 <- ggviolin(abf, i, "class")
 	g2 <- ggviolin(abnf, i, "classF")
 	g3 <- ggridge(abf, i, "class")

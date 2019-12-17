@@ -10,7 +10,7 @@ if(length(i) != 0){
 nc <- detectCores()
 cl <- makeCluster(nc)
 registerDoParallel(cl)
-l <- foreach(l=l, f=f, .inorder=FALSE) %dopar% {
+l <- foreach(l=l, f=f, .inorder=FALSE, .multicombine=TRUE) %dopar% {
 	s <- sub("\\.bed\\.gz", "", sub("^(cnt/|cnt/repseq/)", "name=", l))
 	gfd <- gzfile(f, "wb")
 	cat(paste("track type=bedGraph visibility=full",

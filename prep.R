@@ -15,7 +15,7 @@ gzreadlines <- function(file, n, fn){
 		if(length(x) < nc * n)
 			si <- splitIndices(length(x), nc)
 		x <- lapply(si, function(i) x[i])
-		ll <- foreach(x=x, sid=seq(sq, sq+nc-1), .inorder=FALSE) %dopar%
+		ll <- foreach(x=x, sid=seq(sq, sq+nc-1), .inorder=FALSE, .multicombine=TRUE) %dopar%
 			fn(x, sid)
 		l <- c(l, ll)
 		sq <- sq + nc
@@ -325,7 +325,7 @@ mkrepseq <- function(){
 	nc <- detectCores()
 	cl <- makeCluster(nc)
 	registerDoParallel(cl)
-	l <- foreach(f=f, n=n, .inorder=FALSE, .export="write.gzip") %dopar%
+	l <- foreach(f=f, n=n, .inorder=FALSE, .multicomine=TRUE, .export="write.gzip") %dopar%
 		write.gzip(repmask[repmask$id %in% n,], f)
 	stopCluster(cl)
 

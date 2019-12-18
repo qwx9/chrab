@@ -1,4 +1,4 @@
-require(dplyr)
+library(dplyr)
 
 getfromcsv <- function(file){
 	lst <- read.csv(file)

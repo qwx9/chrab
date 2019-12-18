@@ -1,6 +1,6 @@
-require(dplyr)
-require(doParallel)
-require(readxl)
+library(dplyr)
+library(doParallel)
+library(readxl)
 source("lib.R")
 
 gzreadlines <- function(file, n, fn){

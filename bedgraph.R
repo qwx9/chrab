@@ -1,4 +1,4 @@
-require(doParallel)
+library(doParallel)
 
 l <- list.files("cnt", pattern="*.gz", full.names=TRUE, recursive=TRUE)
 f <- sub("\\.bed", ".bedgraph", sub("^cnt/", "igv/", l))

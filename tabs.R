@@ -1,4 +1,4 @@
-require(dplyr)
+library(dplyr)
 source("lib.R")
 
 write.counts <- function(x, file){

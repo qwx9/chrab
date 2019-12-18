@@ -1,9 +1,9 @@
-require(dplyr)
-require(grid)
-require(gridExtra)
-require(ggplot2)
-require(ggridges)
-require(doParallel)
+library(dplyr)
+library(grid)
+library(gridExtra)
+library(ggplot2)
+library(ggridges)
+library(doParallel)
 
 ggviolin <- function(ab, var, class){
 	n <- ab %>%

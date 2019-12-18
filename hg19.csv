@@ -1,6 +1,5 @@
 description,file url,file path
 hg19 repeatmasker output,ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa.out.gz,hg19/hg19.fa.out.gz
 hg19 known genes,ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/database/ncbiRefSeq.txt.gz,hg19/ncbiRefSeq.txt.gz
-hg19 ensembl lastest release regulation elements,ftp://ftp.ensembl.org/pub/grch37/release-98/regulation/homo_sapiens/homo_sapiens.GRCh37.Regulatory_Build.regulatory_features.20180925.gff.gz,hg19/homo_sapiens.GRCh37.Regulatory_Build.regulatory_features.20180925.gff.gz
 hg19 gc content,ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.gc5Base.wigVarStep.gz,hg19/hg19.gc5Base.wigVarStep.gz
 hg19 chromHMM tracks,ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeBroadHmm/wgEncodeBroadHmmHuvecHMM.bed.gz,hg19/wgEncodeBroadHmmHuvecHMM.bed.gz

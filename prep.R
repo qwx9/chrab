@@ -188,22 +188,6 @@ mkhuvecrep <- function(f){
 		write.table(f, sep="\t", quote=FALSE, row.names=FALSE)
 }
 
-mkpromenh <- function(f){
-	read.table("hg19/homo_sapiens.GRCh37.Regulatory_Build.regulatory_features.20180925.gff.gz", fill=TRUE) %>%
-		filter(V3 %in% c("promoter", "enhancer")) %>%
-		select(V1, V4, V5, V9) %>%
-		mutate(V1=paste0("chr", V1), V9=strsplit(as.character(V9), "=|;")[[1]][2]) %>%
-		write.gzip(f)
-}
-
-mkprom <- function(f){
-	read.table("hg19/homo_sapiens.GRCh37.Regulatory_Build.regulatory_features.20180925.gff.gz", fill=TRUE) %>%
-		filter(V3 == "promoter") %>%
-		select(V1, V4, V5, V9) %>%
-		mutate(V1=paste0("chr", V1), V9=strsplit(as.character(V9), "=|;")[[1]][2]) %>%
-		write.gzip(f)
-}
-
 mkgroseq <- function(f){
 	lapply(c("huvec/groseq.rep1.bedGraph.gz",
 		"huvec/groseq.rep2.bedGraph.gz",
@@ -248,8 +232,6 @@ mkconv <- function(){
 		list(f="prep/hg19.gc.bed.gz", fn=mkgc5),
 		list(f="prep/ab.bed", fn=mkab),
 		list(f="prep/huvec.repseq.tsv", fn=mkhuvecrep),
-		list(f="prep/hg19.promenh.gff.gz", fn=mkpromenh),
-		list(f="prep/hg19.prom.gff.gz", fn=mkprom),
 		list(f="prep/huvec.groseq.allrep.bed.gz", fn=mkgroseq),
 		list(f="prep/huvec.silencer.bed.gz", fn=mksilencer)
 	)

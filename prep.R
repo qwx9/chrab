@@ -274,14 +274,12 @@ mkrepseq <- function(){
 		filter(!row_number() %in% c(1,2))
 	psilprob <- data.frame(Name=psil$prob)
 	psilsubb <- data.frame(Name=psil$subb)
-	psilanyb <- data.frame(Name=c(psil$prob, psil$subb))
 
 	l <- list(
 		list(f="prep/huvec.repseq.te.bed.gz", q=quote(repcor %>% filter(Class %in% c("SINE", "RC", "SVA", "LTR", "LINE", "DNA")))),
 		list(f="prep/huvec.repseq.ltr.bed.gz", q=quote(repcor %>% filter(Class == "LTR"))),
 		list(f="prep/huvec.repseq.l1.bed.gz", q=quote(repcor %>% filter(Class == "LINE" & Family == "L1"))),
 		list(f="prep/huvec.repseq.l1.ltr.bed.gz", q=quote(repcor %>% filter(Class %in% c("LTR", "LINE")))),
-		list(f="prep/huvec.repseq.anycorb.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < 0))),
 		list(f="prep/huvec.repseq.prob.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01))),
 		list(f="prep/huvec.repseq.prob.te.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class %in% c("SINE", "RC", "SVA", "LTR", "LINE", "DNA")))),
 		list(f="prep/huvec.repseq.prob.nonte.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class %in% c("tRNA", "snRNA", "Simple_repeat", "scRNA", "Satellite", "rRNA", "Low_complexity")))),

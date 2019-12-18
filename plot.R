@@ -35,11 +35,13 @@ ggscatter <- function(ab, var, pc1){
 	g <- ggplot(ab, aes(!!sym(var), !!sym(pc1))) +
 		geom_hex(na.rm=TRUE)
 	cnt <- max(layer_data(g, 1)[,"count"])
-	g <- g +
-		scale_fill_gradientn(colors=c("black", "blue", "red", "yellow"),
-			values=c(0, 1/50, 1/2, 1),
-			breaks=unique(round(seq(0, cnt, length.out=12), 0))) +
-		guides(fill=guide_colorbar(barheight=30))
+	if(!is.infinite(cnt)){
+		g <- g +
+			scale_fill_gradientn(colors=c("black", "blue", "red", "yellow"),
+				values=c(0, 1/50, 1/2, 1),
+				breaks=unique(round(seq(0, cnt, length.out=12), 0))) +
+			guides(fill=guide_colorbar(barheight=30))
+	}
 	grid.arrange(g, top=textGrob(s))
 }
 

@@ -1,8 +1,11 @@
+# concatenate all counts into a single table, and generate other summary tables
 library(dplyr)
 source("lib.R")
 
+# helper function for writing out counts split by one or more classes
 write.counts <- function(x, file){
 	l <- colnames(x)
+	# split iteratively over more and more subclasses and export table
 	x <- sapply(seq_along(l), function(i){
 		if(i > 1){
 			i <- 1:i
@@ -12,31 +15,45 @@ write.counts <- function(x, file){
 		}
 		x %>%
 			select(i) %>%
+			# count NAs
 			table(useNA="always") %>%
 			as.data.frame %>%
+			# rename automatically named Freq column
 			rename(count=Freq) %>%
+			# arrange as we specified
 			arrange(!!!syms(l)) %>%
 			write.table(paste0("tabs/", file, ".by", length(i), ".tsv"),
 				sep="\t", row.names=FALSE, quote=FALSE)
 	})
 }
 
+# helper function to read a count table, filter data on unused chromosomes and
+# pull count column, to add to a table
 addcol <- function(chr, f){
 	read.table(f) %>%
 		filter(V1 %in% unique(chr)) %>%
 		pull(V4)
 }
 
+# read initial binning table with eigenvector
 ab <- read.table("prep/ab.bed", header=TRUE)
+# list all count files (excluding those for individual repseqs), then add
+# column for each, shortening the column name
 for(i in list.files("cnt", pattern="*.gz", full.names=TRUE)){
 	s <- gsub("\\.bed\\.gz$", "", gsub("^cnt/", "", i))
 	ab <- ab %>%
 		mutate(!!s:=addcol(chr, i))
 }
+# special case: cap groseq.score outliers to an upper boudary defined by
+# tukey's fences with k=5, generating a new column
 cap <- quantile(ab$huvec.groseq.score, 0.75) + 5 * IQR(ab$huvec.groseq.score)
 ab <- ab %>%
         mutate(huvec.groseq.capped=ifelse(huvec.groseq.score > cap, cap, huvec.groseq.score))
+# write out non-individual repseq count table
 write.gzip(ab, "tabs/counts.tsv.gz", TRUE)
+# subdivide A/B regions into classes by gene density and presence of
+# transcriptional activity, for each eigenvector (full and without flanking
+# regions)
 ab <- ab %>%
 	mutate(class1=ifelse(HUVEC < 0, "B", "A"),
 		class2=ifelse(hg19.refseq >= 4, "highgenedensity", ifelse(hg19.refseq > 0, "normalgenedensity", "nogene")),
@@ -45,40 +62,50 @@ ab <- ab %>%
 		class4=ifelse(HUVECnoflank < 0, "B", "A"),
 		class=paste(class1, class2, AorBvec, class3, sep="_"),
 		classF=paste(class4, class2, AorBvec, class3, sep="_"))
+# export tables of counts split by each class
 ab %>%
 	select(type=class1, genedensity=class2, pc1=AorBvec, active=class3) %>%
 	write.counts("bins")
 ab %>%
 	select(type=class4, genedensity=class2, pc1=AorBvec, active=class3) %>%
 	write.counts("bins.noflank")
+# remove helper subclasses
 ab <- ab %>%
 	select(-class1, -class2, -class3, -class4)
+# export table of bin classification
 ab %>%
 	select(chr, start, end, HUVEC, HUVECnoflank, class, classF) %>%
 	write.gzip("tabs/class.tsv.gz", TRUE)
 
+# read in columns for individual repseqs as before
 for(i in list.files("cnt/repseq", pattern="*.gz", full.names=TRUE)){
 	s <- gsub("\\.bed\\.gz$", "", gsub("^cnt/repseq/", "", i))
 	ab <- ab %>%
 		mutate(!!s:=addcol(chr, i))
 }
+# export table with counts for all parameters
 ab %>%
+	# remove unused columns, then reorder remaining
 	select(-AorBvec, -IMR90) %>%
 	select(chr, start, end, HUVEC, HUVECnoflank, class, classF, everything()) %>%
 	write.gzip("tabs/aball.tsv.gz", TRUE)
 
+# export descriptive statistics table for each count (removing non-count columns)
 n <- colnames(ab)
 n <- n[grep("^(NA_|[AB]_|AorB|class|chr|start|end)", n, invert=TRUE)]
+# bind together rows for each parameter
 bind_rows(lapply(n, function(n){
 	x <- ab[,n]
 	y <- na.omit(x)
 	data.frame(min=min(y), max=max(y), mean=mean(y), sd=sd(y), median=median(y),
 		q1=quantile(y, 0.25), q3=quantile(y, 0.75), na=sum(is.na(x)))
 })) %>%
+	# reorder columns to have parameter first
 	mutate(parm=n) %>%
 	select(parm, everything()) %>%
 	write.gzip("tabs/parms.tsv.gz", TRUE)
 
+# create binary count beds for each class generated above (for diagnostics)
 for(i in unique(ab$class)){
 	ab %>%
 		mutate(v=ifelse(class==i, 1, 0)) %>%

@@ -1,32 +1,44 @@
+# generate linear models from counted parameters, diagnostic plots and summaries for each
 library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(doParallel)
 
+# predicted r squared calculation
 press <- function(lm){
 	pred.res <- residuals(lm) / (1 - lm.influence(lm)$hat)
 	sum(pred.res ^ 2)
 }
-
 predrsq <- function(lm){
 	1 - press(lm) / sum(anova(lm)$"Sum Sq")
 }
 
+# generate model and model plots; takes the model data.frame, output directory
+# and model name
+# model is created on eigenvector with flanking regions filtered out, and is
+# then run against raw eigenvector; bedgraphs for both are made
 model <- function(ab, dir, name){
+	# create model directory
 	dir.create(dir)
+	# list parameter names
 	expl <- colnames(ab)[-c(1:5)]
+	# generate linear model formula
 	fx <- quote(paste0("HUVECnoflank ~", paste0(expl, collapse="+")))
+	# compute model
 	m <- lm(eval(fx), ab)
 
+	# write out lm summary
 	sink(paste0(dir, "summary.txt"))
 	print(summary(m))
 	sink()
 
+	# get model diagnostic plots
 	pdf(paste0(dir, "plots.pdf"), width=12.1, height=9.7)
 	layout(matrix(c(1,2,3,4),2,2))
 	plot(m)
 	dev.off()
 
+	# attempt for a better residuals vs fitted plot
 	pdf(paste0(dir, "res.vs.fitted.pdf"), width=12.1, height=9.7)
 	g <- data.frame(Fitted=m$fitted.values, Residuals=m$residuals) %>%
 		ggplot(aes(Fitted, Residuals)) +
@@ -36,6 +48,7 @@ model <- function(ab, dir, name){
 	print(g)
 	dev.off()
 
+	# attempt for a better qqplot
 	pdf(paste0(dir, "qqnorm.pdf"), width=12.1, height=9.7)
 	g <- data.frame(Residuals=m$residuals) %>%
 		ggplot(aes(sample=Residuals)) +
@@ -47,11 +60,14 @@ model <- function(ab, dir, name){
 	print(g)
 	dev.off()
 
+	# predict A/B profile on raw eigenvector; must use same variable names
+	# if using predict()
 	pred <- ab %>%
 		mutate(HUVECnoflank=HUVEC) %>%
 		select(-HUVEC)
 	v <- predict(m, pred)
 
+	# attempt at a observed vs predicted plot
 	pdf(paste0(dir, "obs.vs.fitted.pdf"), width=12.1, height=9.7)
 	g <- pred %>%
 		rename(Observed=HUVECnoflank) %>%
@@ -64,10 +80,13 @@ model <- function(ab, dir, name){
 	print(g)
 	dev.off()
 
+	# make bedgraph with prediction on eigenvector without flanking regions
 	gfd <- gzfile(paste0(dir, "noflank.bedgraph.gz"), "wb")
+	# prepend header
 	cat(paste0("track type=bedGraph visibility=full",
 		"color=200,100,0 altColor=0,100,200 priority=20 height=200 name=", dir, "noflank\n"),
 		file=gfd)
+	# add predicted eigenvector value for bins without missing data
 	ab %>%
 		filter(!is.na(HUVECnoflank)) %>%
 		select(chr, start, end) %>%
@@ -76,6 +95,7 @@ model <- function(ab, dir, name){
 			col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t", append=TRUE)
 	close(gfd)
 
+	# make bedgraph with prediction on raw eigenvector
 	gfd <- gzfile(paste0(dir, "full.bedgraph.gz"), "wb")
 	cat(paste0("track type=bedGraph visibility=full",
 		"color=200,100,0 altColor=0,100,200 priority=20 height=200 name=", dir, "full\n"),
@@ -88,16 +108,25 @@ model <- function(ab, dir, name){
 			col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t", append=TRUE)
 	close(gfd)
 
+	# return model object for further processing
 	m
 }
 
+# generate correlation heatmap of params in provided data.frame
 ggcor <- function(ab){
+	# calculate correlation between all parameters, removing NAs
 	c <- cor(ab, use="complete.obs")
+	# perform hierarchical clustering using the correlation as a
+	# dissimilarity measure and order correlation matrix by clusters
 	hc <- hclust(as.dist((1-c)/2))
 	c <- c[hc$order, hc$order]
+	# export raw matrix
 	write.table(c, "score/cor.txt", sep="\t", quote=FALSE)
+	# remove lower matrix triangle since it's redundant
 	c[lower.tri(c)] <- NA
 	pdf("score/cor.pdf", width=12.1, height=9.7)
+	# convert matrix to data.frame, then use gather to make a tidy
+	# data.frame suitable for ggplot2, then draw correlation heatmap
 	g <- c %>%
 		as.data.frame %>%
 		mutate(grp=factor(row.names(.), levels=row.names(.))) %>%
@@ -114,6 +143,7 @@ ggcor <- function(ab){
 	dev.off()
 }
 
+# epigenomic and genomic parameter lists to cross-combine
 epiparms <- list(
 	list(
 		NULL
@@ -220,25 +250,35 @@ seqparms <- list(
 	)
 )
 
+# read table of all counts, only keep useful columns
 ab <- read.table("tabs/counts.tsv.gz", header=TRUE) %>%
 	select(chr, start, end, HUVEC, HUVECnoflank, !!!syms(unique(unlist(c(epiparms, seqparms)))))
+# normalize parameter columns range to [0;1] (doesn't affect prediction
+# efficiency, but coeffs are more easily interpretable)
 ab[,6:ncol(ab)] <- apply(ab[,6:ncol(ab)], 2, function(x) x / max(x, na.rm=TRUE))
 
+# export csv with eigenvector and transformed parameters for neural network
 ab %>%
 	select(-chr, -start, -end, -HUVECnoflank) %>%
 	rename(eigenvector=HUVEC) %>%
 	write.csv(file="score/params.csv", quote=FALSE, row.names=FALSE)
 
+# generate correlation heatmap for all parameters
 ggcor(ab[,-c(1:3,5)])
 
+# get list of all possible combinations between the two lists, and names and
+# filenames of these combinations
 l <- apply(expand.grid(epiparms, seqparms), 1, unlist)
 n <- apply(expand.grid(seq_along(epiparms)-1, seq_along(seqparms)-1), 1, function(x){
 	paste0("m", x[1], ".", x[2])
 })
 f <- paste0("score/", n, "/")
+# remove first combination (NULL, NULL)
 l <- l[-1]
 n <- n[-1]
 f <- f[-1]
+# generate a list of table slices for each combination, which foreach will
+# distribute among workers
 abl <- lapply(l, function(x){
 	select(ab, chr, start, end, HUVEC, HUVECnoflank, !!!syms(as.character(x)))
 })
@@ -246,6 +286,7 @@ abl <- lapply(l, function(x){
 cl <- makeCluster(detectCores())
 registerDoParallel(cl)
 l <- foreach(ab=abl, f=f, n=n, .multicombine=TRUE, .inorder=FALSE, .packages=c("ggplot2", "dplyr")) %dopar% {
+	# generate model and make plots; return a list of model metrics and parameters
 	m <- model(ab, f, n)
 	list(data.frame(model=as.character(n),
 		rsq=round(summary(m)$r.squared, 4),
@@ -258,16 +299,19 @@ l <- foreach(ab=abl, f=f, n=n, .multicombine=TRUE, .inorder=FALSE, .packages=c("
 }
 stopCluster(cl)
 
+# write a summary of each model's performance, sorted by adjusted rsquare
 lapply(l, function(x) x[[1]]) %>%
 	bind_rows %>%
 	arrange(desc(rsqadj)) %>%
 	write.table("score/summary.txt", sep="\t", quote=FALSE, row.names=FALSE)
 
+# empty template data.frame for a table of parameters for each model
 abz <- ab %>%
 	mutate(model="") %>%
 	select(model, everything()) %>%
 	select(-chr, -start, -end, -HUVEC, -HUVECnoflank) %>%
 	filter(rep(FALSE))
+# export a table for parameter used across all models
 lapply(l, function(x) full_join(abz, x[[2]], by=colnames(x[[2]]))) %>%
 	bind_rows %>%
 	write.table("score/params.txt", sep="\t", quote=FALSE, row.names=FALSE)

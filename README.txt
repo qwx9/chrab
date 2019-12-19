@@ -87,17 +87,19 @@ locale:
 [11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C
 
 attached base packages:
-[1] parallel  stats     graphics  grDevices utils     datasets  methods
-[8] base
+[1] grid      parallel  stats     graphics  grDevices utils     datasets
+[8] methods   base
 
 other attached packages:
-[1] ggplot2_3.2.1     doParallel_1.0.15 iterators_1.0.12  foreach_1.4.7
-[5] readxl_1.3.1      dplyr_0.8.3
+ [1] tidyr_1.0.0       readxl_1.3.1      lmtest_0.9-37     zoo_1.8-6
+ [5] gridExtra_2.3     ggridges_0.5.1    ggplot2_3.2.1     dplyr_0.8.3
+ [9] doParallel_1.0.15 iterators_1.0.12  foreach_1.4.7
 
 loaded via a namespace (and not attached):
- [1] Rcpp_1.0.2       magrittr_1.5     tidyselect_0.2.5 munsell_0.5.0
- [5] colorspace_1.4-1 R6_2.4.0         rlang_0.4.0      grid_3.6.1
- [9] gtable_0.3.0     withr_2.1.2      lazyeval_0.2.2   assertthat_0.2.1
-[13] tibble_2.1.3     crayon_1.3.4     purrr_0.3.3      codetools_0.2-16
-[17] glue_1.3.1       compiler_3.6.1   pillar_1.4.2     cellranger_1.1.0
-[21] scales_1.0.0     pkgconfig_2.0.3
+ [1] Rcpp_1.0.3       magrittr_1.5     tidyselect_0.2.5 munsell_0.5.0
+ [5] lattice_0.20-38  colorspace_1.4-1 R6_2.4.1         rlang_0.4.2
+ [9] plyr_1.8.5       gtable_0.3.0     withr_2.1.2      lazyeval_0.2.2
+[13] assertthat_0.2.1 tibble_2.1.3     lifecycle_0.1.0  crayon_1.3.4
+[17] purrr_0.3.3      vctrs_0.2.0      codetools_0.2-16 zeallot_0.1.0
+[21] glue_1.3.1       cellranger_1.1.0 compiler_3.6.1   pillar_1.4.2
+[25] backports_1.1.5  scales_1.1.0     pkgconfig_2.0.3

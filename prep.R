@@ -305,7 +305,7 @@ mkrepseq <- function(){
 	nc <- detectCores()
 	cl <- makeCluster(nc)
 	registerDoParallel(cl)
-	l <- foreach(f=f, n=n, .inorder=FALSE, .multicomine=TRUE, .export="write.gzip") %dopar%
+	l <- foreach(f=f, n=n, .inorder=FALSE, .multicombine=TRUE, .export="write.gzip") %dopar%
 		write.gzip(repmask[repmask$id %in% n,], f)
 	stopCluster(cl)
 

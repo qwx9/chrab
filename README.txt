@@ -63,6 +63,12 @@ The run.sh script calls the various parts of the pipeline in order and aborts on
 - score.R:	generate predictive models and bedgraph and plots of predictions
 
 
+Additional documentation
+========================
+
+The matmeth.md file is a detailed overview of the methods applied and choices made in this pipeline.
+
+
 Used package versions
 =====================
 
@@ -103,3 +109,28 @@ loaded via a namespace (and not attached):
 [17] purrr_0.3.3      vctrs_0.2.0      codetools_0.2-16 zeallot_0.1.0
 [21] glue_1.3.1       cellranger_1.1.0 compiler_3.6.1   pillar_1.4.2
 [25] backports_1.1.5  scales_1.1.0     pkgconfig_2.0.3
+
+
+License
+=======
+
+The code in this repository is covered under the MIT license, reviewable in LICENSE.txt
+
+
+Contributors
+============
+
+This project is the result of work by the following people:
+
+Project leader:
+Geneviève Fourel <genevieve.fourel@ens-lyon.fr>, Research director at INSERM, France
+
+Programmers:
+Konstantinn Bonnet <konstantinn.bonnet@etu.univ-lyon1.fr>, 1st year student in the Bioinformatics Master's Degree of Lyon 1 university, France
+Théophile Boyer <theophile.boyer@etu.univ-lyon1.fr>, 1st year student in the Bioinformatics Master's Degree of Lyon 1 university, France
+
+Preliminary work:
+Raphael Mourad <raphael.mourad@ibcg.biotoul.fr>, Assistant professor at University of Toulouse III, France
+
+Additional help:
+Jean-Baptiste Claude <jean-baptise.claude@ens-lyon.fr>, Bioinformatics Research Engineer, LBMC, Ens Lyon, France

@@ -8,6 +8,12 @@ library(ggridges)
 library(doParallel)
 source("lib.R")
 
+write.pdf <- function(x, file, width=12.1, height=9.7){
+	pdf(file, width, height)
+	print(x)
+	dev.off()
+}
+
 # generate correlation heatmap of params in provided data.frame
 ggcor <- function(ab){
         # calculate correlation between all parameters, removing NAs
@@ -102,14 +108,13 @@ ab <- read.table("tabs/aball.tsv.gz", header=TRUE) %>%
 # linear models plots
 # get epigenomic and genomic parameter lists
 l <- lapply(c("score.eparm.tsv", "score.gparm.tsv"), read.parms)
-
 # generate correlation heatmap for all parameters
-pdf("score/cor.pdf", width=12.1, height=9.7)
-g <- ab %>%
-	select(HUVEC, !!!syms(unique(unlist(l)))) %>%
-	ggcor
-print(g)
-dev.off()
+if(file.access("score/cor.pdf", 4) != 0){
+	ab %>%
+		select(HUVEC, !!!syms(unique(unlist(l)))) %>%
+		ggcor %>%
+		write.pdf("score/cor.pdf")
+}
 
 # list all parameter names, and split individual repseqs apart, since they will
 # be in their own subdirectory; remove class and eigenvector columns
@@ -165,8 +170,6 @@ l <- foreach(i=l, f=f, abf=abf, abnf=abnf, .inorder=FALSE, .multicombine=TRUE, .
 	g4 <- ggridge(abnf, i, "classF")
 	g5 <- ggscatter(abf, i, "HUVEC")
 	g6 <- ggscatter(abnf, i, "HUVECnoflank")
-	pdf(f, width=24, height=20)
-	print(grid.arrange(g1, g2, g3, g4, g5, g6))
-	dev.off()
+	write.pdf(grid.arrange(g1, g2, g3, g4, g5, g6), f, width=24, height=20)
 }
 stopCluster(cl)

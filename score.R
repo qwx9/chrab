@@ -3,6 +3,7 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(doParallel)
+source("lib.R")
 
 # predicted r squared calculation
 press <- function(lm){
@@ -144,115 +145,11 @@ ggcor <- function(ab){
 }
 
 # epigenomic and genomic parameter lists to cross-combine
-epiparms <- list(
-	list(
-		NULL
-	), list(
-		"huvec.chromhmm.merged.strong.promoters",
-		"huvec.chromhmm.merged.weak.promoters",
-		"huvec.chromhmm.any.strong.enhancers"
-	), list(
-		"huvec.chromhmm.merged.strong.promoters",
-		"huvec.chromhmm.merged.weak.promoters",
-		"huvec.chromhmm.any.strong.enhancers",
-		"huvec.chromhmm.3.poised_promoter",
-		"huvec.silencer"
-	), list(
-		"huvec.chromhmm.merged.strong.promoters",
-		"huvec.chromhmm.merged.weak.promoters",
-		"huvec.chromhmm.any.strong.enhancers",
-		"huvec.dhs.rep1"
-	), list(
-		"huvec.chromhmm.merged.strong.promoters",
-		"huvec.chromhmm.merged.weak.promoters",
-		"huvec.chromhmm.any.strong.enhancers",
-		"huvec.chromhmm.3.poised_promoter",
-		"huvec.silencer",
-		"huvec.dhs.rep1"
-	), list(
-		"huvec.h3k27ac",
-		"huvec.h3k4me3",
-		"huvec.dhs.rep1",
-		"huvec.silencer",
-		"huvec.groseq.capped"
-	), list(
-		"huvec.h3k27ac",
-		"huvec.h3k4me3",
-		"huvec.dhs.rep1",
-		"huvec.silencer",
-		"huvec.groseq.capped",
-		"huvec.chromhmm.3.poised_promoter"
-	), list(
-		"huvec.dhs.rep1"
-	)
-)
-seqparms <- list(
-	list(
-		NULL
-	), list(
-		"huvec.repseq.prob"
-	), list(
-		"huvec.repseq.prob.te"
-	), list(
-		"huvec.repseq.prob.ltr",
-		"huvec.repseq.prob.l1long",
-		"huvec.repseq.psil.prob"
-	), list(
-		"huvec.repseq.prob.ltr"
-	), list(
-		"huvec.repseq.proa",
-		"huvec.repseq.prob"
-	), list(
-		"huvec.repseq.proa.te",
-		"huvec.repseq.prob.te"
-	), list(
-		"huvec.repseq.proa.te",
-		"huvec.repseq.prob.ltr",
-		"huvec.repseq.prob.l1long",
-		"huvec.repseq.psil.prob"
-	), list(
-		"huvec.repseq.proa.te",
-		"huvec.repseq.prob.ltr"
-	), list(
-		"hg19.refseq"
-	), list(
-		"hg19.gc"
-	), list(
-		"huvec.repseq.proa"
-	), list(
-		"huvec.repseq.proa",
-		"hg19.refseq"
-	), list(
-		"huvec.repseq.proa",
-		"huvec.repseq.prob",
-		"hg19.refseq"
-	), list(
-		"hg19.refseq",
-		"hg19.gc"
-	), list(
-		"huvec.repseq.proa",
-		"huvec.repseq.prob",
-		"hg19.gc"
-	), list(
-		"huvec.repseq.proa.nonte",
-		"huvec.repseq.prob.sr.lc.sat"
-	), list(
-		"huvec.repseq.proa.nonte",
-		"huvec.repseq.prob"
-	), list(
-		"huvec.repseq.proa",
-		"huvec.repseq.prob.sr.lc.sat"
-	), list(
-		"huvec.repseq.proa.te",
-		"huvec.repseq.proa.nonte",
-		"huvec.repseq.prob.te",
-		"huvec.repseq.prob.sr.lc.sat"
-	)
-)
+l <- lapply(c("score.eparm.tsv", "score.gparm.tsv"), read.parms)
 
 # read table of all counts, only keep useful columns
 ab <- read.table("tabs/counts.tsv.gz", header=TRUE) %>%
-	select(chr, start, end, HUVEC, HUVECnoflank, !!!syms(unique(unlist(c(epiparms, seqparms)))))
+	select(chr, start, end, HUVEC, HUVECnoflank, !!!syms(unique(unlist(l))))
 # normalize parameter columns range to [0;1] (doesn't affect prediction
 # efficiency, but coeffs are more easily interpretable)
 ab[,6:ncol(ab)] <- apply(ab[,6:ncol(ab)], 2, function(x) x / max(x, na.rm=TRUE))
@@ -266,17 +163,11 @@ ab %>%
 # generate correlation heatmap for all parameters
 ggcor(ab[,-c(1:3,5)])
 
-# get list of all possible combinations between the two lists, and names and
-# filenames of these combinations
-l <- apply(expand.grid(epiparms, seqparms), 1, unlist)
-n <- apply(expand.grid(seq_along(epiparms)-1, seq_along(seqparms)-1), 1, function(x){
-	paste0("m", x[1], ".", x[2])
-})
-f <- paste0("score/", n, "/")
-# remove first combination (NULL, NULL)
-l <- l[-1]
-n <- n[-1]
-f <- f[-1]
+# get list of all possible combinations between the two lists, and filenames of
+# these combinations
+l <- comb.parms(l)
+f <- paste0("score/", names(l), "/")
+
 # generate a list of table slices for each combination, which foreach will
 # distribute among workers
 abl <- lapply(l, function(x){
@@ -285,7 +176,7 @@ abl <- lapply(l, function(x){
 
 cl <- makeCluster(detectCores())
 registerDoParallel(cl)
-l <- foreach(ab=abl, f=f, n=n, .multicombine=TRUE, .inorder=FALSE, .packages=c("ggplot2", "dplyr")) %dopar% {
+l <- foreach(ab=abl, f=f, n=names(l), .multicombine=TRUE, .inorder=FALSE, .packages=c("ggplot2", "dplyr")) %dopar% {
 	# generate model and make plots; return a list of model metrics and parameters
 	m <- model(ab, f, n)
 	list(data.frame(model=as.character(n),

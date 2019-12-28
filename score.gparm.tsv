@@ -1,0 +1,19 @@
+huvec.repseq.prob
+huvec.repseq.prob.te
+huvec.repseq.prob.ltr	huvec.repseq.prob.l1long	huvec.repseq.psil.prob
+huvec.repseq.prob.ltr
+huvec.repseq.proa	huvec.repseq.prob
+huvec.repseq.proa.te	huvec.repseq.prob.te
+huvec.repseq.proa.te	huvec.repseq.prob.ltr	huvec.repseq.prob.l1long	huvec.repseq.psil.prob
+huvec.repseq.proa.te	huvec.repseq.prob.ltr
+hg19.refseq
+hg19.gc
+huvec.repseq.proa
+huvec.repseq.proa	hg19.refseq
+huvec.repseq.proa	huvec.repseq.prob	hg19.refseq
+hg19.refseq	hg19.gc
+huvec.repseq.proa	huvec.repseq.prob	hg19.gc
+huvec.repseq.proa.nonte	huvec.repseq.prob.sr.lc.sat
+huvec.repseq.proa.nonte	huvec.repseq.prob
+huvec.repseq.proa	huvec.repseq.prob.sr.lc.sat
+huvec.repseq.proa.te	huvec.repseq.proa.nonte	huvec.repseq.prob.te	huvec.repseq.prob.sr.lc.sat

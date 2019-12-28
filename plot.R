@@ -1,10 +1,41 @@
 # generate plots for all counts
 library(dplyr)
+library(tidyr)
 library(grid)
 library(gridExtra)
 library(ggplot2)
 library(ggridges)
 library(doParallel)
+source("lib.R")
+
+# generate correlation heatmap of params in provided data.frame
+ggcor <- function(ab){
+        # calculate correlation between all parameters, removing NAs
+        c <- cor(ab, use="complete.obs")
+        # perform hierarchical clustering using the correlation as a
+        # dissimilarity measure and order correlation matrix by clusters
+        hc <- hclust(as.dist((1-c)/2))
+        c <- c[hc$order, hc$order]
+        # export raw matrix
+        write.table(c, "score/cor.txt", sep="\t", quote=FALSE)
+        # remove lower matrix triangle since it's redundant
+        c[lower.tri(c)] <- NA
+        # convert matrix to data.frame, then use gather to make a tidy
+	# data.frame suitable for ggplot2, and return correlation heatmap
+	# ggplot object
+        c %>%
+                as.data.frame %>%
+                mutate(grp=factor(row.names(.), levels=row.names(.))) %>%
+                gather(key, v, -grp, na.rm=TRUE, factor_key=TRUE) %>%
+                ggplot(aes(key, grp, fill=v, label=round(v,2))) +
+                        geom_tile(color="white") +
+                        scale_fill_gradient2(low="blue", high="red", mid="white",
+                                midpoint=0, limit=c(-1,1), space="Lab",
+                                name="Pearson\nCorrelation") +
+                 theme(axis.text.x=element_text(angle=45, vjust=1, size=12, hjust=1)) +
+                        coord_fixed() +
+                        geom_text(color="black", size=2)
+}
 
 # violin plots: takes a data.frame with class and parameter; parameter name;
 # class variable to use
@@ -67,6 +98,19 @@ ggscatter <- function(ab, var, pc1){
 # read table of all counts, removing useless columns
 ab <- read.table("tabs/aball.tsv.gz", header=TRUE) %>%
 	select(-chr, -start, -end)
+
+# linear models plots
+# get epigenomic and genomic parameter lists
+l <- lapply(c("score.eparm.tsv", "score.gparm.tsv"), read.parms)
+
+# generate correlation heatmap for all parameters
+pdf("score/cor.pdf", width=12.1, height=9.7)
+g <- ab %>%
+	select(HUVEC, !!!syms(unique(unlist(l)))) %>%
+	ggcor
+print(g)
+dev.off()
+
 # list all parameter names, and split individual repseqs apart, since they will
 # be in their own subdirectory; remove class and eigenvector columns
 l <- colnames(ab)

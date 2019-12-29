@@ -49,8 +49,27 @@ for(i in list.files("cnt", pattern="*.gz", full.names=TRUE)){
 cap <- quantile(ab$huvec.groseq.score, 0.75) + 5 * IQR(ab$huvec.groseq.score)
 ab <- ab %>%
         mutate(huvec.groseq.capped=ifelse(huvec.groseq.score > cap, cap, huvec.groseq.score))
+
 # write out non-individual repseq count table
 write.gzip(ab, "tabs/counts.tsv.gz", TRUE)
+
+# epigenomic and genomic parameter lists for modeling
+l <- lapply(c("score.eparm.tsv", "score.gparm.tsv"), read.parms)
+# select modeling parameters and apply transformations
+abm <- ab %>%
+	select(chr, start, end, HUVEC, HUVECnoflank, !!!syms(unique(unlist(l)))) %>%
+	# normalize parameter columns range to [0;1] for easier interpretation
+	# (doesn't affect prediction efficiency)
+	mutate_if(1:ncol(.) > 5, ~. / max(., na.rm=TRUE)) %>%
+	rename(eigenvector=HUVEC, eigenvectornf=HUVECnoflank)
+# write out parameter values for neural network modeling
+abm %>%
+	select(-chr, -start, -end, -eigenvectornf) %>%
+	write.csv(file="tabs/nnparms.csv", quote=FALSE, row.names=FALSE)
+# write out parameter values for linear modeling
+abm %>%
+	write.gzip("tabs/lmparms.tsv.gz", TRUE)
+
 # subdivide A/B regions into classes by gene density and presence of
 # transcriptional activity, for each eigenvector (full and without flanking
 # regions)

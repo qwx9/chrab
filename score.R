@@ -23,7 +23,7 @@ model <- function(ab, dir, name){
 	# list parameter names
 	expl <- colnames(ab)[-c(1:5)]
 	# generate linear model formula
-	fx <- quote(paste0("HUVECnoflank ~", paste0(expl, collapse="+")))
+	fx <- quote(paste0("eigenvectornf ~", paste0(expl, collapse="+")))
 	# compute model
 	m <- lm(eval(fx), ab)
 
@@ -63,14 +63,14 @@ model <- function(ab, dir, name){
 	# predict A/B profile on raw eigenvector; must use same variable names
 	# if using predict()
 	pred <- ab %>%
-		mutate(HUVECnoflank=HUVEC) %>%
-		select(-HUVEC)
+		mutate(eigenvectornf=eigenvector) %>%
+		select(-eigenvector)
 	v <- predict(m, pred)
 
 	# attempt at a observed vs predicted plot
 	pdf(paste0(dir, "obs.vs.fitted.pdf"), width=12.1, height=9.7)
 	g <- pred %>%
-		rename(Observed=HUVECnoflank) %>%
+		rename(Observed=eigenvectornf) %>%
 		mutate(Fitted=v) %>%
 		ggplot(aes(Fitted, Observed)) +
 			geom_point(na.rm=TRUE, color="darkblue", alpha=0.2, shape=20) +
@@ -88,7 +88,7 @@ model <- function(ab, dir, name){
 		file=gfd)
 	# add predicted eigenvector value for bins without missing data
 	ab %>%
-		filter(!is.na(HUVECnoflank)) %>%
+		filter(!is.na(eigenvectornf)) %>%
 		select(chr, start, end) %>%
 		mutate(v=m$fitted.values) %>%
 		write.table(gfd,
@@ -102,7 +102,7 @@ model <- function(ab, dir, name){
 		file=gfd)
 	ab %>%
 		mutate(v=v) %>%
-		filter(!is.na(HUVEC)) %>%
+		filter(!is.na(eigenvector)) %>%
 		select(chr, start, end, v) %>%
 		write.table(gfd,
 			col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t", append=TRUE)
@@ -112,31 +112,20 @@ model <- function(ab, dir, name){
 	m
 }
 
+# read table of all counts
+ab <- read.table("tabs/lmparms.tsv.gz", header=TRUE)
+
 # epigenomic and genomic parameter lists to cross-combine
-l <- lapply(c("score.eparm.tsv", "score.gparm.tsv"), read.parms)
-
-# read table of all counts, only keep useful columns
-ab <- read.table("tabs/counts.tsv.gz", header=TRUE) %>%
-	select(chr, start, end, HUVEC, HUVECnoflank, !!!syms(unique(unlist(l))))
-# normalize parameter columns range to [0;1] (doesn't affect prediction
-# efficiency, but coeffs are more easily interpretable)
-ab[,6:ncol(ab)] <- apply(ab[,6:ncol(ab)], 2, function(x) x / max(x, na.rm=TRUE))
-
-# export csv with eigenvector and transformed parameters for neural network
-ab %>%
-	select(-chr, -start, -end, -HUVECnoflank) %>%
-	rename(eigenvector=HUVEC) %>%
-	write.csv(file="score/params.csv", quote=FALSE, row.names=FALSE)
-
 # get list of all possible combinations between the two lists, and filenames of
 # these combinations
+l <- lapply(c("score.eparm.tsv", "score.gparm.tsv"), read.parms)
 l <- comb.parms(l)
 f <- paste0("score/", names(l), "/")
 
 # generate a list of table slices for each combination, which foreach will
 # distribute among workers
 abl <- lapply(l, function(x){
-	select(ab, chr, start, end, HUVEC, HUVECnoflank, !!!syms(as.character(x)))
+	select(ab, chr, start, end, eigenvector, eigenvectornf, !!!syms(as.character(x)))
 })
 
 cl <- makeCluster(detectCores())
@@ -165,7 +154,7 @@ lapply(l, function(x) x[[1]]) %>%
 abz <- ab %>%
 	mutate(model="") %>%
 	select(model, everything()) %>%
-	select(-chr, -start, -end, -HUVEC, -HUVECnoflank) %>%
+	select(-chr, -start, -end, -eigenvector, -eigenvectornf) %>%
 	filter(rep(FALSE))
 # export a table for parameter used across all models
 lapply(l, function(x) full_join(abz, x[[2]], by=colnames(x[[2]]))) %>%

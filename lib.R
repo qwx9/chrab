@@ -1,8 +1,8 @@
 # shared functions
 
 # wrapper for write.table to output a tsv file
-write.tsv <- function(x, con, col.names=FALSE, ...){
-	write.table(x, con, col.names=col.names, row.names=FALSE, quote=FALSE, sep="\t", ...)
+write.tsv <- function(x, con, col.names=FALSE, row.names=FALSE, ...){
+	write.table(x, con, col.names=col.names, row.names=row.names, quote=FALSE, sep="\t", ...)
 }
 
 # wrapper for write.tsv to output a gz compressed file

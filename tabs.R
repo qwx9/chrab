@@ -2,6 +2,16 @@
 library(dplyr)
 source("lib.R")
 
+# generate a clustered correlation matrix
+cormat <- function(x){
+	# calculate correlation between all parameters, removing NAs
+	x <- cor(x, use="complete.obs")
+        # perform hierarchical clustering using the correlation as a
+        # dissimilarity measure and order correlation matrix by clusters
+        hc <- hclust(as.dist((1-x)/2))
+        x[hc$order, hc$order]
+}
+
 # helper function for writing out counts split by one or more classes
 write.counts <- function(x, file){
 	l <- colnames(x)
@@ -68,6 +78,11 @@ abm %>%
 # write out parameter values for linear modeling
 abm %>%
 	write.gzip("tabs/lmparms.tsv.gz", TRUE)
+# generate a correlation matrix for plotting
+abm %>%
+	select(-chr, -start, -end, -eigenvectornf) %>%
+	cormat %>%
+	write.tsv("tabs/lmparmscor.tsv", col.names=TRUE, row.names=TRUE)
 
 # subdivide A/B regions into classes by gene density and presence of
 # transcriptional activity, for each eigenvector (full and without flanking

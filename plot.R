@@ -15,21 +15,13 @@ write.pdf <- function(x, file, width=12.1, height=9.7){
 }
 
 # generate correlation heatmap of params in provided data.frame
-ggcor <- function(ab){
-        # calculate correlation between all parameters, removing NAs
-        c <- cor(ab, use="complete.obs")
-        # perform hierarchical clustering using the correlation as a
-        # dissimilarity measure and order correlation matrix by clusters
-        hc <- hclust(as.dist((1-c)/2))
-        c <- c[hc$order, hc$order]
-        # export raw matrix
-        write.table(c, "score/cor.txt", sep="\t", quote=FALSE)
+ggcor <- function(cm){
         # remove lower matrix triangle since it's redundant
-        c[lower.tri(c)] <- NA
+        cm[lower.tri(cm)] <- NA
         # convert matrix to data.frame, then use gather to make a tidy
 	# data.frame suitable for ggplot2, and return correlation heatmap
 	# ggplot object
-        c %>%
+        cm %>%
                 as.data.frame %>%
                 mutate(grp=factor(row.names(.), levels=row.names(.))) %>%
                 gather(key, v, -grp, na.rm=TRUE, factor_key=TRUE) %>%
@@ -110,8 +102,7 @@ ab <- read.table("tabs/aball.tsv.gz", header=TRUE) %>%
 l <- lapply(c("score.eparm.tsv", "score.gparm.tsv"), read.parms)
 # generate correlation heatmap for all parameters
 if(file.access("score/cor.pdf", 4) != 0){
-	ab %>%
-		select(HUVEC, !!!syms(unique(unlist(l)))) %>%
+	read.table("tabs/lmparmscor.tsv", header=TRUE) %>%
 		ggcor %>%
 		write.pdf("score/cor.pdf")
 }

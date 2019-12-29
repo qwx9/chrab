@@ -6,6 +6,6 @@ Rscript init.R
 Rscript prep.R
 ./count.sh
 Rscript tabs.R
-Rscript score.R
+Rscript lm.R
 Rscript plot.R
 Rscript bedgraph.R

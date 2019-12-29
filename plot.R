@@ -99,12 +99,12 @@ ab <- read.table("tabs/aball.tsv.gz", header=TRUE) %>%
 
 # linear models plots
 # get epigenomic and genomic parameter lists
-l <- lapply(c("score.eparm.tsv", "score.gparm.tsv"), read.parms)
+l <- lapply(c("lm.eparm.tsv", "lm.gparm.tsv"), read.parms)
 # generate correlation heatmap for all parameters
-if(file.access("score/cor.pdf", 4) != 0){
+if(file.access("lm/cor.pdf", 4) != 0){
 	read.table("tabs/lmparmscor.tsv", header=TRUE) %>%
 		ggcor %>%
-		write.pdf("score/cor.pdf")
+		write.pdf("lm/cor.pdf")
 }
 
 # list all parameter names, and split individual repseqs apart, since they will

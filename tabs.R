@@ -63,7 +63,7 @@ ab <- ab %>%
 write.gzip(ab, "tabs/counts.tsv.gz", TRUE)
 
 # epigenomic and genomic parameter lists for modeling
-l <- lapply(c("score.eparm.tsv", "score.gparm.tsv"), read.parms)
+l <- lapply(c("lm.eparm.tsv", "lm.gparm.tsv"), read.parms)
 # select modeling parameters and apply transformations
 abm <- ab %>%
 	select(HUVEC, HUVECnoflank, !!!syms(unique(unlist(l)))) %>%

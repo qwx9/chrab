@@ -36,10 +36,10 @@ l1 <- data.frame(l=l,
 	stringsAsFactors=FALSE
 )
 # add model files
-l <- list.files("score", pattern="pred.tsv.gz", full.names=TRUE, recursive=TRUE)
+l <- list.files("lm", pattern="pred.tsv.gz", full.names=TRUE, recursive=TRUE)
 l2 <- data.frame(l=l,
 	f=sub("\\.tsv", ".bedgraph", l),
-	n=gsub("^score/|/pred.tsv.gz$", "", l),
+	n=gsub("^lm/|/pred.tsv.gz$", "", l),
 	stringsAsFactors=FALSE
 )
 

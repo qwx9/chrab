@@ -93,9 +93,9 @@ ab <- read.table("tabs/lmparms.tsv.gz", header=TRUE)
 # epigenomic and genomic parameter lists to cross-combine
 # get list of all possible combinations between the two lists, and filenames of
 # these combinations
-l <- lapply(c("score.eparm.tsv", "score.gparm.tsv"), read.parms)
+l <- lapply(c("lm.eparm.tsv", "lm.gparm.tsv"), read.parms)
 l <- comb.parms(l)
-f <- paste0("score/", names(l), "/")
+f <- paste0("lm/", names(l), "/")
 
 # generate a list of table slices for each combination, which foreach will
 # distribute among workers
@@ -122,7 +122,7 @@ stopCluster(cl)
 lapply(l, function(x) x[[1]]) %>%
 	bind_rows %>%
 	arrange(desc(rsqadj)) %>%
-	write.table("score/summary.txt", sep="\t", quote=FALSE, row.names=FALSE)
+	write.table("lm/summary.txt", sep="\t", quote=FALSE, row.names=FALSE)
 
 # empty template data.frame for a table of parameters for each model
 abz <- ab %>%
@@ -133,4 +133,4 @@ abz <- ab %>%
 # export a table for parameter used across all models
 lapply(l, function(x) full_join(abz, x[[2]], by=colnames(x[[2]]))) %>%
 	bind_rows %>%
-	write.table("score/params.txt", sep="\t", quote=FALSE, row.names=FALSE)
+	write.table("lm/params.txt", sep="\t", quote=FALSE, row.names=FALSE)

@@ -3,8 +3,19 @@ library(dplyr)
 library(doParallel)
 source("lib.R")
 
+pullcnt <- function(ab, x){
+	x <- read.table(x)
+	if(ncol(x) > 1){
+		x %>%
+			filter(V1 %in% ab$chr) %>%
+			select(4) %>%
+			pull
+	}else
+		pull(x)
+}
+
 # get bin positions for files that don't contain them
-ab <- read.table("prep/ab.bed", header=TRUE, stringsAsFactors=FALSE) %>%
+ab <- read.table("prep/ab.bed", header=TRUE) %>%
 	select(chr, start, end)
 
 # read neural network results if they exist
@@ -15,22 +26,35 @@ if(file.access("gf/results.csv", 4) == 0){
 		write.gzbedg("igv/nnpred.bedgraph.gz", "nnpred")
 }
 
-# recursively list count files, use same path for destination, and check if the
-# bedgraphs already exist
+# generate list of files to generate along with vector of source tables and
+# bedgraph names
+# add count files
 l <- list.files("cnt", pattern="*.gz", full.names=TRUE, recursive=TRUE)
-f <- sub("\\.bed", ".bedgraph", sub("^cnt/", "igv/", l))
-i <- which(file.access(f, 4) != 0)
-# no new files to be added
-if(length(i) == 0)
+l1 <- data.frame(l=l,
+	f=sub("\\.bed", ".bedgraph", sub("^cnt/", "igv/", l)),
+	n=gsub("^(cnt/|cnt/repseq/)|\\.bed\\.gz", "", l),
+	stringsAsFactors=FALSE
+)
+# add model files
+l <- list.files("score", pattern="pred.tsv.gz", full.names=TRUE, recursive=TRUE)
+l2 <- data.frame(l=l,
+	f=sub("\\.tsv", ".bedgraph", l),
+	n=gsub("^score/|/pred.tsv.gz$", "", l),
+	stringsAsFactors=FALSE
+)
+
+# don't overwrite existing files
+l <- prune.extant(bind_rows(l1, l2))
+if(nrow(l) == 0)
 	quit()
-# generate only missing files, prep for parallelization by taking input data
-# which foreach will distribute to workers on its own
-l <- l[i]
-f <- f[i]
+
 nc <- detectCores()
 cl <- makeCluster(nc)
 registerDoParallel(cl)
-l <- foreach(l=l, f=f, .inorder=FALSE, .multicombine=TRUE) %dopar% {
-	write.gzbedg(read.table(l), f, gsub("^(cnt/|cnt/repseq/)|\\.bed\\.gz", "", l))
+l <- foreach(l=l$l, f=l$f, n=l$n, .inorder=FALSE, .multicombine=TRUE, .packages="dplyr") %dopar% {
+	ab %>%
+		mutate(v=pullcnt(., l)) %>%
+		filter(!is.na(v)) %>%
+		write.gzbedg(f, n)
 }
 stopCluster(cl)

@@ -66,21 +66,21 @@ write.gzip(ab, "tabs/counts.tsv.gz", TRUE)
 l <- lapply(c("score.eparm.tsv", "score.gparm.tsv"), read.parms)
 # select modeling parameters and apply transformations
 abm <- ab %>%
-	select(chr, start, end, HUVEC, HUVECnoflank, !!!syms(unique(unlist(l)))) %>%
+	select(HUVEC, HUVECnoflank, !!!syms(unique(unlist(l)))) %>%
 	# normalize parameter columns range to [0;1] for easier interpretation
 	# (doesn't affect prediction efficiency)
-	mutate_if(1:ncol(.) > 5, ~. / max(., na.rm=TRUE)) %>%
+	mutate_if(1:ncol(.) > 2, ~. / max(., na.rm=TRUE)) %>%
 	rename(eigenvector=HUVEC, eigenvectornf=HUVECnoflank)
 # write out parameter values for neural network modeling
 abm %>%
-	select(-chr, -start, -end, -eigenvectornf) %>%
+	select(-eigenvectornf) %>%
 	write.csv(file="tabs/nnparms.csv", quote=FALSE, row.names=FALSE)
 # write out parameter values for linear modeling
 abm %>%
 	write.gzip("tabs/lmparms.tsv.gz", TRUE)
 # generate a correlation matrix for plotting
 abm %>%
-	select(-chr, -start, -end, -eigenvectornf) %>%
+	select(-eigenvectornf) %>%
 	cormat %>%
 	write.tsv("tabs/lmparmscor.tsv", col.names=TRUE, row.names=TRUE)
 

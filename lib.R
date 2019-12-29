@@ -41,3 +41,9 @@ comb.parms <- function(x){
 	})
 	l[-1]
 }
+
+# slice existing files off a file path vector and associated vectors of same
+# length (other metadata)
+prune.extant <- function(df){
+	df[which(file.access(df$f, 4) != 0),]
+}

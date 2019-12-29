@@ -83,34 +83,6 @@ model <- function(ab, dir, name){
 	print(g)
 	dev.off()
 
-	# make bedgraph with prediction on eigenvector without flanking regions
-	gfd <- gzfile(paste0(dir, "noflank.bedgraph.gz"), "wb")
-	# prepend header
-	cat(paste0("track type=bedGraph visibility=full",
-		"color=200,100,0 altColor=0,100,200 priority=20 height=200 name=", dir, "noflank\n"),
-		file=gfd)
-	# add predicted eigenvector value for bins without missing data
-	ab %>%
-		filter(!is.na(eigenvectornf)) %>%
-		select(chr, start, end) %>%
-		mutate(v=m$fitted.values) %>%
-		write.table(gfd,
-			col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t", append=TRUE)
-	close(gfd)
-
-	# make bedgraph with prediction on raw eigenvector
-	gfd <- gzfile(paste0(dir, "full.bedgraph.gz"), "wb")
-	cat(paste0("track type=bedGraph visibility=full",
-		"color=200,100,0 altColor=0,100,200 priority=20 height=200 name=", dir, "full\n"),
-		file=gfd)
-	ab %>%
-		mutate(v=v) %>%
-		filter(!is.na(eigenvector)) %>%
-		select(chr, start, end, v) %>%
-		write.table(gfd,
-			col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t", append=TRUE)
-	close(gfd)
-
 	# return model object for further processing
 	m
 }
@@ -128,7 +100,7 @@ f <- paste0("score/", names(l), "/")
 # generate a list of table slices for each combination, which foreach will
 # distribute among workers
 abl <- lapply(l, function(x){
-	select(ab, chr, start, end, eigenvector, eigenvectornf, !!!syms(as.character(x)))
+	select(ab, eigenvector, eigenvectornf, !!!syms(as.character(x)))
 })
 
 cl <- makeCluster(detectCores())
@@ -156,7 +128,7 @@ lapply(l, function(x) x[[1]]) %>%
 abz <- ab %>%
 	mutate(model="") %>%
 	select(model, everything()) %>%
-	select(-chr, -start, -end, -eigenvector, -eigenvectornf) %>%
+	select(-eigenvector, -eigenvectornf) %>%
 	filter(rep(FALSE))
 # export a table for parameter used across all models
 lapply(l, function(x) full_join(abz, x[[2]], by=colnames(x[[2]]))) %>%

@@ -1,6 +1,19 @@
 # take all generated counts and convert to bedgraphs
+library(dplyr)
 library(doParallel)
 source("lib.R")
+
+# get bin positions for files that don't contain them
+ab <- read.table("prep/ab.bed", header=TRUE, stringsAsFactors=FALSE) %>%
+	select(chr, start, end)
+
+# read neural network results if they exist
+if(file.access("gf/results.csv", 4) == 0){
+	x <- read.table("gf/results.csv", sep="\t", header=TRUE, stringsAsFactors=FALSE)
+	ab %>%
+		mutate(pred=x$prediction_nn) %>%
+		write.gzbedg("igv/nnpred.bedgraph.gz", "nnpred")
+}
 
 # recursively list count files, use same path for destination, and check if the
 # bedgraphs already exist

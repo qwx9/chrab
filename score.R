@@ -1,17 +1,9 @@
 # generate linear models from counted parameters, diagnostic plots and summaries for each
 library(dplyr)
+library(broom)
 library(ggplot2)
 library(doParallel)
 source("lib.R")
-
-# predicted r squared calculation
-press <- function(lm){
-	pred.res <- residuals(lm) / (1 - lm.influence(lm)$hat)
-	sum(pred.res ^ 2)
-}
-predrsq <- function(lm){
-	1 - press(lm) / sum(anova(lm)$"Sum Sq")
-}
 
 # generate model and model plots; takes the model data.frame, output directory
 # and model name
@@ -20,6 +12,7 @@ predrsq <- function(lm){
 model <- function(ab, dir, name){
 	# create model directory
 	dir.create(dir)
+
 	# list parameter names
 	expl <- colnames(ab)[-c(1:5)]
 	# generate linear model formula
@@ -31,6 +24,16 @@ model <- function(ab, dir, name){
 	sink(paste0(dir, "summary.txt"))
 	print(summary(m))
 	sink()
+
+	# write tidy coefficient estimations, model performance statistics and
+	# predictions
+	tidy(m) %>%
+		write.tsv(paste0(dir, "coef.tsv"), col.names=TRUE)
+	glance(m) %>%
+		write.tsv(paste0(dir, "perf.tsv"), col.names=TRUE)
+	augment(m, newdata=ab) %>%
+		select(.fitted) %>%
+		write.gzip(paste0(dir, "pred.tsv.gz"))
 
 	# get model diagnostic plots
 	pdf(paste0(dir, "plots.pdf"), width=12.1, height=9.7)
@@ -130,13 +133,12 @@ abl <- lapply(l, function(x){
 
 cl <- makeCluster(detectCores())
 registerDoParallel(cl)
-l <- foreach(ab=abl, f=f, n=names(l), .multicombine=TRUE, .inorder=FALSE, .packages=c("ggplot2", "dplyr")) %dopar% {
+l <- foreach(ab=abl, f=f, n=names(l), .multicombine=TRUE, .inorder=FALSE, .packages=c("ggplot2", "dplyr", "broom")) %dopar% {
 	# generate model and make plots; return a list of model metrics and parameters
 	m <- model(ab, f, n)
 	list(data.frame(model=as.character(n),
 		rsq=round(summary(m)$r.squared, 4),
 		rsqadj=round(summary(m)$adj.r.squared, 4),
-		predrsq=round(predrsq(m), 4),
 		vars=paste(names(m$coefficients)[-1], collapse=", "),
 		stringsAsFactors=FALSE),
 		data.frame(model=n, as.list(m$coefficients[-1]),

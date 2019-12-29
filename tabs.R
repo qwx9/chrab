@@ -22,8 +22,7 @@ write.counts <- function(x, file){
 			rename(count=Freq) %>%
 			# arrange as we specified
 			arrange(!!!syms(l)) %>%
-			write.table(paste0("tabs/", file, ".by", length(i), ".tsv"),
-				sep="\t", row.names=FALSE, quote=FALSE)
+			write.tsv(paste0("tabs/", file, ".by", length(i), ".tsv"))
 	})
 }
 

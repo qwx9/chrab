@@ -256,7 +256,7 @@ mkchr <- function(f){
 		mutate(chr=ifelse(nchar(chrom) == 4 & substr(chrom, 4, 4) %in% 0:9, paste0("chr0", substr(chrom, 4, 4)), chrom)) %>%
 		arrange(chr) %>%
 		select(-chr) %>%
-		write.table(f, sep="\t", row.names=FALSE, quote=FALSE)
+		write.tsv(f)
 }
 
 # extract a/b profile for each 100kb bin from excel table
@@ -270,7 +270,7 @@ mkab <- function(f){
 		ungroup %>%
 		mutate(HUVECnoflank=ifelse(flank, NA, HUVEC)) %>%
 		select(chr, start, end, AorBvec, HUVEC, HUVECnoflank, IMR90) %>%
-		write.table(f, sep="\t", quote=FALSE, row.names=FALSE)
+		write.tsv(f)
 }
 
 # extract repseq list and correlation from excel file
@@ -278,7 +278,7 @@ mkhuvecrep <- function(f){
 	read_xlsx("gf/Kassiotis-List.ORI.RepSeq.CorrB-Fourel.11july.xlsx", col_types="text",
 		.name_repair=~gsub(" ", "_", .x)) %>%
 		select(-Rank_CorrB) %>%
-		write.table(f, sep="\t", quote=FALSE, row.names=FALSE)
+		write.tsv(f)
 }
 
 # concatenate groseq replicates for each strand

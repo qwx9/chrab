@@ -14,6 +14,23 @@ write.pdf <- function(x, file, width=12.1, height=9.7){
 	dev.off()
 }
 
+# quantile-quantile plot against normal distribution
+ggqnorm <- function(d){
+	ggplot(d, aes(sample=res)) +
+		stat_qq_line(color="blue") +
+		stat_qq(size=0.7) +
+		ggtitle("Quantile-quantile plot of residuals") +
+		xlab("Theoretical normal distribution quantiles") +
+		ylab("Standardized residuals")
+}
+
+ggfit <- function(d, var, title, method="auto"){
+	ggplot(d, aes(fitted, !!sym(var))) +
+		geom_point(na.rm=TRUE, color="darkblue", alpha=0.2, shape=20) +
+		geom_smooth(method=method, na.rm=TRUE, se=FALSE, color="red", size=0.4) +
+		ggtitle(title)
+}
+
 # generate correlation heatmap of params in provided data.frame
 ggcor <- function(cm){
         # remove lower matrix triangle since it's redundant
@@ -115,11 +132,8 @@ l <- l[grep("^(NA_|[AB]_|class|HUVEC|IMR90|huvec\\.repseq\\.only)", l, invert=TR
 # generate filenames for all parameters
 f <- c(paste0("plot/", l, ".pdf"), paste0("plot/repseq/", l2, ".pdf"))
 l <- c(l, l2)
-# get list of missing files, exit if there are none
-i <- which(file.access(f, 4) != 0)
-if(length(i) == 0)
-	quit()
 # only generate missing plots
+i <- which(file.access(f, 4) != 0)
 l <- l[i]
 f <- f[i]
 # generate two data.frames based on which eigenvector we use, then split into
@@ -162,5 +176,33 @@ l <- foreach(i=l, f=f, abf=abf, abnf=abnf, .inorder=FALSE, .multicombine=TRUE, .
 	g5 <- ggscatter(abf, i, "HUVEC")
 	g6 <- ggscatter(abnf, i, "HUVECnoflank")
 	write.pdf(grid.arrange(g1, g2, g3, g4, g5, g6), f, width=24, height=20)
+}
+
+# generate model plots
+ab <- read.table("tabs/lmparms.tsv.gz", header=TRUE)
+l <- list.dirs("lm", full.names=FALSE)[-1]
+f <- paste0("lm/", l, "/plot.pdf")
+# only generate missing plots
+i <- which(file.access(f, 4) != 0)
+l <- l[i]
+f <- f[i]
+# slice ab into a list of data.frame with weighted parameters and model fit and error
+coef <- lapply(l, function(x) read.table(paste0("lm/", x, "/coef.tsv"), header=TRUE))
+abl <- lapply(coef, function(x){
+	x <- x[,1:2]
+	d <- select(ab, eigenvectornf, !!!syms(as.character(x[-1,1])))
+	for(i in 2:ncol(x))
+		d[,i] <- d[,i] * x[i,2]
+	d$fitted <- x[1,2] + rowSums(select(d, -1))
+	d$res <- d$eigenvectornf - d$fitted
+	d
+})
+# generate plots
+l <- foreach(ab=abl, f=f, .inorder=FALSE, .multicombine=TRUE, .packages=c("ggplot2", "grid", "gridExtra", "dplyr")) %dopar% {
+	g1 <- ggfit(ab, "res", "Model residuals versus fitted values")
+	g2 <- ggfit(ab, "eigenvectornf",
+		"Observed eigenvector values versus fitted values", method="lm")
+	g3 <- ggqnorm(ab)
+	write.pdf(grid.arrange(g1, g2, g3), f, width=24, height=20)
 }
 stopCluster(cl)

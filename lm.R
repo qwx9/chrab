@@ -1,7 +1,6 @@
 # generate linear models from counted parameters, diagnostic plots and summaries for each
 library(dplyr)
 library(broom)
-library(ggplot2)
 library(doParallel)
 source("lib.R")
 
@@ -34,54 +33,6 @@ model <- function(ab, dir, name){
 	augment(m, newdata=ab) %>%
 		select(.fitted) %>%
 		write.gzip(paste0(dir, "pred.tsv.gz"))
-
-	# get model diagnostic plots
-	pdf(paste0(dir, "plots.pdf"), width=12.1, height=9.7)
-	layout(matrix(c(1,2,3,4),2,2))
-	plot(m)
-	dev.off()
-
-	# attempt for a better residuals vs fitted plot
-	pdf(paste0(dir, "res.vs.fitted.pdf"), width=12.1, height=9.7)
-	g <- data.frame(Fitted=m$fitted.values, Residuals=m$residuals) %>%
-		ggplot(aes(Fitted, Residuals)) +
-			geom_point(na.rm=TRUE, color="darkblue", alpha=0.2, shape=20) +
-			geom_smooth(se=FALSE, color="red", size=0.4) +
-			ggtitle("Model residuals versus fitted values")
-	print(g)
-	dev.off()
-
-	# attempt for a better qqplot
-	pdf(paste0(dir, "qqnorm.pdf"), width=12.1, height=9.7)
-	g <- data.frame(Residuals=m$residuals) %>%
-		ggplot(aes(sample=Residuals)) +
-			stat_qq_line() +
-			stat_qq(color="darkblue", size=0.7) +
-			ggtitle("Quantile-quantile plot of residuals") +
-			xlab("Theoretical normal distribution quantiles") +
-			ylab("Standardized residuals")
-	print(g)
-	dev.off()
-
-	# predict A/B profile on raw eigenvector; must use same variable names
-	# if using predict()
-	pred <- ab %>%
-		mutate(eigenvectornf=eigenvector) %>%
-		select(-eigenvector)
-	v <- predict(m, pred)
-
-	# attempt at a observed vs predicted plot
-	pdf(paste0(dir, "obs.vs.fitted.pdf"), width=12.1, height=9.7)
-	g <- pred %>%
-		rename(Observed=eigenvectornf) %>%
-		mutate(Fitted=v) %>%
-		ggplot(aes(Fitted, Observed)) +
-			geom_point(na.rm=TRUE, color="darkblue", alpha=0.2, shape=20) +
-			geom_smooth(method="lm", na.rm=TRUE, se=FALSE, color="red", size=0.4) +
-			ggtitle(paste0("Observed eigenvector values versus values predicted by model ",
-				name, " (R²adj=", round(summary(m)$adj.r.squared, 2), ")"))
-	print(g)
-	dev.off()
 }
 
 # read table of all counts

@@ -82,9 +82,6 @@ model <- function(ab, dir, name){
 				name, " (R²adj=", round(summary(m)$adj.r.squared, 2), ")"))
 	print(g)
 	dev.off()
-
-	# return model object for further processing
-	m
 }
 
 # read table of all counts
@@ -97,40 +94,56 @@ l <- lapply(c("lm.eparm.tsv", "lm.gparm.tsv"), read.parms)
 l <- comb.parms(l)
 f <- paste0("lm/", names(l), "/")
 
+# only generate missing models
+i <- which(file.access(f, 4) != 0)
+l <- l[i]
+f <- f[i]
+
 # generate a list of table slices for each combination, which foreach will
 # distribute among workers
 abl <- lapply(l, function(x){
 	select(ab, eigenvector, eigenvectornf, !!!syms(as.character(x)))
 })
 
+# generate missing models
 cl <- makeCluster(detectCores())
 registerDoParallel(cl)
 l <- foreach(ab=abl, f=f, n=names(l), .multicombine=TRUE, .inorder=FALSE, .packages=c("ggplot2", "dplyr", "broom")) %dopar% {
-	# generate model and make plots; return a list of model metrics and parameters
-	m <- model(ab, f, n)
-	list(data.frame(model=as.character(n),
-		rsq=round(summary(m)$r.squared, 4),
-		rsqadj=round(summary(m)$adj.r.squared, 4),
-		vars=paste(names(m$coefficients)[-1], collapse=", "),
-		stringsAsFactors=FALSE),
-		data.frame(model=n, as.list(m$coefficients[-1]),
-		stringsAsFactors=FALSE))
+	model(ab, f, n)
+	NULL
 }
 stopCluster(cl)
 
+# read summaries of all models
+l <- list.dirs("lm", full.names=FALSE)[-1]
+perf <- lapply(l, function(x) read.table(paste0("lm/", x, "/perf.tsv"), header=TRUE))
+coef <- lapply(l, function(x) cbind(read.table(paste0("lm/", x, "/coef.tsv"), header=TRUE), list(model=x)))
+
 # write a summary of each model's performance, sorted by adjusted rsquare
-lapply(l, function(x) x[[1]]) %>%
-	bind_rows %>%
-	arrange(desc(rsqadj)) %>%
-	write.table("lm/summary.txt", sep="\t", quote=FALSE, row.names=FALSE)
+bind_rows(perf) %>%
+	mutate(model=l,
+		parms=sapply(coef, function(x) paste(as.character(x[-1,1]), collapse=", "))) %>%
+	select(model, everything()) %>%
+	arrange(desc(adj.r.squared)) %>%
+	write.tsv("lm/summary.tsv", col.names=TRUE)
 
 # empty template data.frame for a table of parameters for each model
 abz <- ab %>%
-	mutate(model="") %>%
-	select(model, everything()) %>%
 	select(-eigenvector, -eigenvectornf) %>%
-	filter(rep(FALSE))
+	filter(rep(FALSE)) %>%
+	mutate(model=character(), b0=numeric()) %>%
+	select(model, b0, everything())
+# tidyverse "simple" transpose
+coeft <- lapply(coef, function(x){
+	x %>%
+		gather(var, val, 2:ncol(x), -model) %>%
+		spread("term", "val", "model", convert=TRUE) %>%
+		rename(b0="(Intercept)") %>%
+		filter(var == "estimate") %>%
+		select(-var) %>%
+		mutate_if(is.factor, as.character)
+})
 # export a table for parameter used across all models
-lapply(l, function(x) full_join(abz, x[[2]], by=colnames(x[[2]]))) %>%
+lapply(coeft, function(x) full_join(abz, x, by=colnames(x))) %>%
 	bind_rows %>%
-	write.table("lm/params.txt", sep="\t", quote=FALSE, row.names=FALSE)
+	write.tsv("lm/parms.tsv", col.names=TRUE)

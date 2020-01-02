@@ -5,6 +5,7 @@ bedtools makewindows -g prep/hg19.txt -w 100000 >prep/hg19w.bed
 
 cp huvec/h3k4me3.bed.gz prep/huvec.h3k4me3.bed.gz
 cp huvec/h3k27ac.bed.gz prep/huvec.h3k27ac.bed.gz
+cp huvec/h3k27me3.bed.gz prep/huvec.h3k27me3.bed.gz
 cp huvec/dhs.rep1.bed.gz prep/huvec.dhs.rep1.bed.gz
 
 bedtools merge -s -c 4,5,6 -o distinct,mean,distinct -i prep/huvec.groseq.allrep.bed.gz |\

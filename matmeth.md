@@ -39,7 +39,7 @@ Counting was done with the BEDtools software suite along 100kb windows for each 
 
 To avoid discrepancies between GRO-seq and ChromHMM data, these were not intersected to provide counts of "active genes".  Instead, HUVEC active promoters were defined as a merge between strong and weak promoters in ChromHMM data.
 
-For visual representations of each element, counts were split in classes based on either an A or B tendency, then again based on gene density (none, regular (<4 genes) and high), then once more by the presence or not of active promoters as defined above.
+For visual representations of each element, counts were split in classes based on either an A or B tendency for HUVEC, then again based on gene density (none, regular (<4 genes) and high), A/B/AorB consensus profile between 8 cell lines, and then once more by the presence or not of active promoters as defined above.
 
 
 Multivariate linear model of AB profile
@@ -56,13 +56,21 @@ A Linear model was built for each combination of explanatory variables, with the
 
 Perspectives (discussion)
 -------------------------
-- higher efficiency general linear models by implementing a correct variable selection algorithm based on AIC and likelihood ratio tests on nested models (rather than preselecting combinations and generating every model)
+- higher efficiency general linear models by implementing a correct variable selection algorithm based on AIC and likelihood ratio tests on nested models (rather than preselecting combinations and generating every model), possibly taking into account interactions
+	* the algorithm may use adjusted R squared, significance of each coefficient estimate, F statistic p-value, LRT and/or AIC
+	* multiple regression, stepwise regression, problems of multicollinearity: https://sites.ualberta.ca/~lkgray/uploads/7/3/6/2/7362679/slides_-_multiplelinearregressionaic.pdf
+	* https://www.statmethods.net/stats/regression.html
+	* https://rcompanion.org/rcompanion/e_05.html
+	* https://uc-r.github.io/model_selection
+- use of a priori value of parameters (0) with R's lm?
+- prediction strength in each A/B subclass along hg19, in particular in AorB regions
 - logistic regression
-- non-linear models
+	* https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4828741/
+- non-linear models, particularly generalized non-linear models such as GAM
+	* https://datascienceplus.com/generalized-additive-models/
 - neural networks and comparison to linear model efficiency
 - regression trees for highly correlated parameters
-
-
-!!! HUVECnoflank vector was built from HUVEC vector, not AorBvec!
-!!! AorBvec not used in tabs for classification!
-!!! mean null = 0 never set for groseq.mean!
+	* https://uc-r.github.io/regression_trees
+- extension to IMR90 (non-cancerous cell line in the process of differentiation) or GM12878
+- extension to hg38
+- taking into account other parameters such as super enhancers, etc.

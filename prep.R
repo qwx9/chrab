@@ -372,7 +372,12 @@ mkrepseq <- function(){
 		mutate(prob=liste_FINALE, subb=liste) %>%
 		filter(!row_number() %in% c(1,2))
 	psilprob <- data.frame(Name=psil$prob)
-	psilsubb <- data.frame(Name=psil$subb)
+	ebv <- read_xlsx("gf/listes.EBV(LTR)-transmis.26dec2019.xlsx", col_types="text") %>%
+		select(1:2) %>%
+		filter(row_number() > 2) %>%
+		rename(prob=sublist.EBV, nonb="...2")
+	ebvprob <- data.frame(Name=ebv$prob)
+	ebvnonb <- data.frame(Name=ebv$nonb)
 
 	l <- list(
 		list(f="prep/huvec.repseq.te.bed.gz", q=quote(repcor %>% filter(Class %in% c("SINE", "RC", "SVA", "LTR", "LINE", "DNA")))),
@@ -387,6 +392,8 @@ mkrepseq <- function(){
 		list(f="prep/huvec.repseq.prob.l1.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class == "LINE" & Family == "L1"))),
 		list(f="prep/huvec.repseq.prob.l1.ltr.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class %in% c("LTR", "LINE")))),
 		list(f="prep/huvec.repseq.psil.prob.bed.gz", q=quote(psilprob)),
+		list(f="prep/huvec.repseq.ebv.prob.bed.gz", q=quote(ebvprob)),
+		list(f="prep/huvec.repseq.ebv.nonprob.bed.gz", q=quote(ebvnonb)),
 		list(f="prep/huvec.repseq.proa.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01))),
 		list(f="prep/huvec.repseq.proa.te.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01 & Class %in% c("SINE", "RC", "SVA", "LTR", "LINE", "DNA")))),
 		list(f="prep/huvec.repseq.proa.nonte.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01 & Class %in% c("tRNA", "snRNA", "Simple_repeat", "scRNA", "Satellite", "rRNA", "Low_complexity")))),

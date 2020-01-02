@@ -1,5 +1,6 @@
 # generate linear models from counted parameters, diagnostic plots and summaries for each
 library(dplyr)
+library(tidyr)
 library(broom)
 library(doParallel)
 source("lib.R")
@@ -13,7 +14,7 @@ model <- function(ab, dir, name){
 	dir.create(dir)
 
 	# list parameter names
-	expl <- colnames(ab)[-c(1:5)]
+	expl <- colnames(ab)[-c(1:2)]
 	# generate linear model formula
 	fx <- quote(paste0("eigenvectornf ~", paste0(expl, collapse="+")))
 	# compute model

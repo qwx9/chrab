@@ -70,6 +70,15 @@ Additional documentation
 The matmeth.md file is a detailed overview of the methods applied and choices made in this pipeline.
 
 
+Hardware used
+=============
+
+The pipeline was run and tested on a personal laptop with 4 physical CPU cores (and hyperthreading enabled) and 32GB of RAM.
+Note that count.sh hardcodes the number of cores to 8.
+On this machine, the entire pipeline runs in under 2 hours.
+The pipeline may be run with 8, perhaps 4GB of RAM, as long as the number of cores used in parallel processing is minimized.
+
+
 Used package versions
 =====================
 

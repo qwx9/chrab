@@ -1,4 +1,5 @@
 # generate plots for all counts
+suppressPackageStartupMessages({
 library(dplyr)
 library(tidyr)
 library(grid)
@@ -6,6 +7,7 @@ library(gridExtra)
 library(ggplot2)
 library(ggridges)
 library(doParallel)
+})
 source("lib.R")
 
 write.pdf <- function(x, file, width=12.1, height=9.7){

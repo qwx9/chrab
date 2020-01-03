@@ -1,8 +1,10 @@
 # generate linear models from counted parameters, diagnostic plots and summaries for each
+suppressPackageStartupMessages({
 library(dplyr)
 library(tidyr)
 library(broom)
 library(doParallel)
+})
 source("lib.R")
 
 # generate model and model plots; takes the model data.frame, output directory

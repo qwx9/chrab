@@ -1,5 +1,7 @@
 # fetch input data from Encode, GEO, and others
+suppressPackageStartupMessages({
 library(dplyr)
+})
 
 # read a csv file describing each piece of data and extract file url and output
 # file path

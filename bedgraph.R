@@ -1,6 +1,8 @@
 # take all generated counts and convert to bedgraphs
+suppressPackageStartupMessages({
 library(dplyr)
 library(doParallel)
+})
 source("lib.R")
 
 pullcnt <- function(ab, x){

@@ -1,7 +1,9 @@
 # data extraction, conversions and other transformations prior to counting
+suppressPackageStartupMessages({
 library(dplyr)
 library(doParallel)
 library(readxl)
+})
 source("lib.R")
 
 # read compressed wig count file in parallel
@@ -372,10 +374,13 @@ mkrepseq <- function(){
 		mutate(prob=liste_FINALE, subb=liste) %>%
 		filter(!row_number() %in% c(1,2))
 	psilprob <- data.frame(Name=psil$prob)
-	ebv <- read_xlsx("gf/listes.EBV(LTR)-transmis.26dec2019.xlsx", col_types="text") %>%
-		select(1:2) %>%
-		filter(row_number() > 2) %>%
-		rename(prob=sublist.EBV, nonb="...2")
+	# yes, this is not really a table and column names are all screwed up
+	suppressWarnings(
+		ebv <- read_xlsx("gf/listes.EBV(LTR)-transmis.26dec2019.xlsx", col_types="text") %>%
+			select(1:2) %>%
+			filter(row_number() > 2) %>%
+			rename(prob=sublist.EBV, nonb="...2")
+	)
 	ebvprob <- data.frame(Name=ebv$prob)
 	ebvnonb <- data.frame(Name=ebv$nonb)
 

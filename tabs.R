@@ -1,6 +1,14 @@
 # concatenate all counts into a single table, and generate other summary tables
+suppressPackageStartupMessages({
 library(dplyr)
+})
 source("lib.R")
+
+# cap a count based on tukey's fences
+capcnt <- function(x, k=5){
+	ubound <- quantile(x, 0.75) + k * IQR(x)
+	ifelse(x > ubound, ubound, x)
+}
 
 # generate a clustered correlation matrix
 cormat <- function(x){
@@ -53,11 +61,12 @@ for(i in list.files("cnt", pattern="*.gz", full.names=TRUE)){
 	ab <- ab %>%
 		mutate(!!s:=addcol(chr, i))
 }
-# special case: cap groseq.score outliers to an upper boudary defined by
-# tukey's fences with k=5, generating a new column
-cap <- quantile(ab$huvec.groseq.score, 0.75) + 5 * IQR(ab$huvec.groseq.score)
+
+# special case: cap groseq score outliers to an upper boudary
 ab <- ab %>%
-        mutate(huvec.groseq.capped=ifelse(huvec.groseq.score > cap, cap, huvec.groseq.score))
+	mutate(huvec.groseq.capped.meanofmean=capcnt(huvec.groseq.meanofmean),
+		huvec.groseq.capped.meanofsum=capcnt(huvec.groseq.meanofsum),
+		huvec.groseq.capped.sumofsum=capcnt(huvec.groseq.sumofsum))
 
 # write out non-individual repseq count table
 write.gzip(ab, "tabs/counts.tsv.gz", TRUE)

@@ -5,3 +5,4 @@ huvec.chromhmm.merged.strong.promoters	huvec.chromhmm.merged.weak.promoters	huve
 huvec.h3k27ac	huvec.h3k4me3	huvec.dhs.rep1	huvec.silencer	huvec.groseq.capped.sumofsum
 huvec.h3k27ac	huvec.h3k4me3	huvec.dhs.rep1	huvec.silencer	huvec.groseq.capped.sumofsum	huvec.chromhmm.3.poised_promoter
 huvec.dhs.rep1
+huvec.h3k27me3

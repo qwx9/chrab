@@ -4,6 +4,46 @@ library(dplyr)
 })
 source("lib.R")
 
+# return a row of descriptive statistics for a variable in the filtered
+# data.frame ab
+statsrow <- function(ab, var){
+	v <- ab[,var]
+	su <- sum(v, na.rm=TRUE)
+	if(all(is.na(v))){
+		data.frame(parm=var,
+			EanyA=NA,
+			EanyB=NA,
+			EalwaysA=NA,
+			EalwaysB=NA,
+			min=NA,
+			max=NA,
+			mean=NA,
+			sd=NA,
+			median=NA,
+			q1=NA,
+			q3=NA,
+			na=length(v),
+			stringsAsFactors=FALSE
+		)
+	}else{
+		data.frame(parm=var,
+			EanyA=sum(v[ab$anyA], na.rm=TRUE) / su * 100,
+			EanyB=sum(v[ab$anyB], na.rm=TRUE) / su * 100,
+			EalwaysA=sum(v[ab$alwaysA], na.rm=TRUE) / su * 100,
+			EalwaysB=sum(v[ab$alwaysB], na.rm=TRUE) / su * 100,
+			min=min(v, na.rm=TRUE),
+			max=max(v, na.rm=TRUE),
+			mean=mean(v, na.rm=TRUE),
+			sd=sd(v, na.rm=TRUE),
+			median=median(v, na.rm=TRUE),
+			q1=quantile(v, 0.25, na.rm=TRUE),
+			q3=quantile(v, 0.75, na.rm=TRUE),
+			na=sum(is.na(v)),
+			stringsAsFactors=FALSE
+		)
+	}
+}
+
 # cap a count based on tukey's fences
 capcnt <- function(x, k=5){
 	ubound <- quantile(x, 0.75) + k * IQR(x)
@@ -111,11 +151,9 @@ ab %>%
 ab %>%
 	select(type=class4, genedensity=class2, pc1=AorBvec, active=class3) %>%
 	write.counts("bins.noflank")
-# remove helper subclasses
-ab <- ab %>%
-	select(-class1, -class2, -class3, -class4)
 # export table of bin classification
 ab %>%
+	select(-class1, -class2, -class3, -class4) %>%
 	select(chr, start, end, HUVEC, HUVECnoflank, class, classF) %>%
 	write.gzip("tabs/class.tsv.gz", TRUE)
 
@@ -128,24 +166,50 @@ for(i in list.files("cnt/repseq", pattern="*.gz", full.names=TRUE)){
 # export table with counts for all parameters
 ab %>%
 	# remove unused columns, then reorder remaining
-	select(-AorBvec, -IMR90) %>%
+	select(-AorBvec, -IMR90, -matches("class[1-4]")) %>%
 	select(chr, start, end, HUVEC, HUVECnoflank, class, classF, everything()) %>%
 	write.gzip("tabs/aball.tsv.gz", TRUE)
 
-# export descriptive statistics table for each count (removing non-count columns)
-n <- colnames(ab)
-n <- n[grep("^(NA_|[AB]_|AorB|class|chr|start|end)", n, invert=TRUE)]
-# bind together rows for each parameter
-bind_rows(lapply(n, function(n){
-	x <- ab[,n]
-	y <- na.omit(x)
-	data.frame(min=min(y), max=max(y), mean=mean(y), sd=sd(y), median=median(y),
-		q1=quantile(y, 0.25), q3=quantile(y, 0.75), na=sum(is.na(x)))
-})) %>%
-	# reorder columns to have parameter first
-	mutate(parm=n) %>%
-	select(parm, everything()) %>%
-	write.gzip("tabs/parms.tsv.gz", TRUE)
+# get list of parameter columns for stats
+vars <- ab %>%
+	select(-chr, -start, -end, -starts_with("class"), -AorBvec) %>%
+	colnames
+
+# add filtering variables for enrichment calculations
+ab <- ab %>%
+	mutate(anyA=class1=="A", anyB=class1=="B",
+		alwaysA=AorBvec=="AlwaysA", alwaysB=AorBvec=="AlwaysB")
+
+# list of subclass tables to generate with filter condition
+l <- list(
+	list(f="", q=quote(rep(TRUE))),
+	list(f=".alwaysA.hasactive", q=quote(ab$AorBvec=="AlwaysA" & ab$huvec.chromhmm.any.active.promoters > 0)),
+	list(f=".alwaysA.noactive", q=quote(ab$AorBvec=="AlwaysA" & ab$huvec.chromhmm.any.active.promoters == 0)),
+	list(f=".alwaysB.hasactive", q=quote(ab$AorBvec=="AlwaysB" & ab$huvec.chromhmm.any.active.promoters > 0)),
+	list(f=".alwaysB.noactive", q=quote(ab$AorBvec=="AlwaysB" & ab$huvec.chromhmm.any.active.promoters == 0)),
+	list(f=".aorb.hasactive", q=quote(ab$AorBvec=="AorB" & ab$huvec.chromhmm.any.active.promoters > 0)),
+	list(f=".aorb.noactive", q=quote(ab$AorBvec=="AorB" & ab$huvec.chromhmm.any.active.promoters == 0)),
+	list(f=".alwaysA.highgene", q=quote(ab$AorBvec=="AlwaysA" & ab$class2 == "highgenedensity")),
+	list(f=".alwaysA.reggene", q=quote(ab$AorBvec=="AlwaysA" & ab$class2 == "normalgenedensity")),
+	list(f=".alwaysA.lowgene", q=quote(ab$AorBvec=="AlwaysA" & ab$class2 == "nogene")),
+	list(f=".alwaysB.highgene", q=quote(ab$AorBvec=="AlwaysB" & ab$class2 == "highgenedensity")),
+	list(f=".alwaysB.reggene", q=quote(ab$AorBvec=="AlwaysB" & ab$class2 == "normalgenedensity")),
+	list(f=".alwaysB.lowgene", q=quote(ab$AorBvec=="AlwaysB" & ab$class2 == "nogene")),
+	list(f=".aorba.highgene", q=quote(ab$AorBvec=="AorB" & ab$class1 == "A" & ab$class2 == "highgenedensity")),
+	list(f=".aorba.reggene", q=quote(ab$AorBvec=="AorB" & ab$class1 == "A" & ab$class2 == "normalgenedensity")),
+	list(f=".aorba.lowgene", q=quote(ab$AorBvec=="AorB" & ab$class1 == "A" & ab$class2 == "nogene")),
+	list(f=".aorbb.highgene", q=quote(ab$AorBvec=="AorB" & ab$class1 == "B" & ab$class2 == "highgenedensity")),
+	list(f=".aorbb.reggene", q=quote(ab$AorBvec=="AorB" & ab$class1 == "B" & ab$class2 == "normalgenedensity")),
+	list(f=".aorbb.lowgene", q=quote(ab$AorBvec=="AorB" & ab$class1 == "B" & ab$class2 == "nogene"))
+)
+l <- c(l, lapply(unique(ab$class), function(x) list(f=paste0(".", x), q=bquote(ab$class == .(x)))))
+# generate the subclass tables
+l <- lapply(l, function(x){
+	d <- filter(ab, eval(x$q))
+	lapply(vars, function(n) statsrow(d, n)) %>%
+		bind_rows %>%
+		write.gzip(paste0("tabs/parms", x$f, ".tsv.gz"), TRUE)
+})
 
 # create binary count beds for each class generated above (for diagnostics)
 for(i in unique(ab$class)){

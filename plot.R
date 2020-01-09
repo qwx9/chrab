@@ -35,23 +35,23 @@ ggfit <- function(d, var, title, method="auto"){
 
 # generate correlation heatmap of params in provided data.frame
 ggcor <- function(cm){
-        # remove lower matrix triangle since it's redundant
-        cm[lower.tri(cm)] <- NA
-        # convert matrix to data.frame, then use gather to make a tidy
+	# remove lower matrix triangle since it's redundant
+	cm[lower.tri(cm)] <- NA
+	# convert matrix to data.frame, then use gather to make a tidy
 	# data.frame suitable for ggplot2, and return correlation heatmap
 	# ggplot object
-        cm %>%
-                as.data.frame %>%
-                mutate(grp=factor(row.names(.), levels=row.names(.))) %>%
-                gather(key, v, -grp, na.rm=TRUE, factor_key=TRUE) %>%
-                ggplot(aes(key, grp, fill=v, label=round(v,2))) +
-                        geom_tile(color="white") +
-                        scale_fill_gradient2(low="blue", high="red", mid="white",
-                                midpoint=0, limit=c(-1,1), space="Lab",
-                                name="Pearson\nCorrelation") +
-                 theme(axis.text.x=element_text(angle=45, vjust=1, size=12, hjust=1)) +
-                        coord_fixed() +
-                        geom_text(color="black", size=2)
+	cm %>%
+		as.data.frame %>%
+		mutate(grp=factor(row.names(.), levels=row.names(.))) %>%
+		gather(key, v, -grp, na.rm=TRUE, factor_key=TRUE) %>%
+		ggplot(aes(key, grp, fill=v, label=round(v,2))) +
+			geom_tile(color="white") +
+			scale_fill_gradient2(low="blue", high="red", mid="white",
+				midpoint=0, limit=c(-1,1), space="Lab",
+				name="Pearson\nCorrelation") +
+			theme(axis.text.x=element_text(angle=45, vjust=1, size=12, hjust=1)) +
+				coord_fixed() +
+				geom_text(color="black", size=2)
 }
 
 # violin plots: takes a data.frame with class and parameter; parameter name;
@@ -74,9 +74,11 @@ ggviolin <- function(ab, var, class){
 # ridgeline plots: takes a data.frame with class and parameter; parameter name;
 # class variable to use
 ggridge <- function(ab, var, class){
-	ggplot(ab, aes(!!sym(var), !!sym(class), fill=!!sym(class))) +
-		scale_fill_discrete(guide=FALSE) +
-		geom_density_ridges2(na.rm=TRUE)
+	ab %>%
+		mutate_at(class, ~factor(!!sym(class), levels=rev(levels(!!sym(class))), ordered=TRUE)) %>%
+		ggplot(aes(!!sym(var), !!sym(class), fill=!!sym(class))) +
+			scale_fill_discrete(guide=FALSE) +
+			geom_density_ridges2(na.rm=TRUE)
 }
 
 # scatter plots: takes a data.frame with eigenvector and parameter; parameter
@@ -103,7 +105,7 @@ ggscatter <- function(ab, var, pc1){
 	# values and add more ticks for the gradient label
 	if(!is.infinite(cnt)){
 		g <- g +
-			scale_fill_gradientn(colors=c("black", "blue", "red", "yellow"),
+			scale_fill_gradientn(colors=c("#cccccc", "blue", "red", "yellow"),
 				values=c(0, 1/50, 1/2, 1),
 				breaks=unique(round(seq(0, cnt, length.out=12), 0))) +
 			guides(fill=guide_colorbar(barheight=30))
@@ -116,6 +118,12 @@ ggscatter <- function(ab, var, pc1){
 ab <- read.table("tabs/aball.tsv.gz", header=TRUE) %>%
 	select(-chr, -start, -end)
 
+# set global theme options
+th <- theme_classic() +
+	theme(panel.grid.major=element_line(size=0.5, linetype="solid", colour="#eeeeee"),
+	panel.grid.minor=element_line(size=0.25, linetype="solid", colour="#eeeeee"))
+theme_set(th)
+
 # linear models plots
 # get epigenomic and genomic parameter lists
 l <- lapply(c("lm.eparm.tsv", "lm.gparm.tsv"), read.parms)
@@ -125,6 +133,18 @@ if(file.access("lm/cor.pdf", 4) != 0){
 		ggcor %>%
 		write.pdf("lm/cor.pdf")
 }
+
+# reorder classes for plots
+l <- levels(ab$class)
+l <- c(l[grep("^A_nogene", l)], l[grep("^A_high", l)], l[grep("^A_normal", l)],
+	l[grep("^B_normal", l)], l[grep("^B_nogene", l)], l[grep("^B_high", l)],
+	l[grep("^NA", l)])
+ab$class <- factor(ab$class, levels=l, ordered=TRUE)
+l <- levels(ab$classF)
+l <- c(l[grep("^A_nogene", l)], l[grep("^A_high", l)], l[grep("^A_normal", l)],
+	l[grep("^B_normal", l)], l[grep("^B_nogene", l)], l[grep("^B_high", l)],
+	l[grep("^NA", l)])
+ab$classF <- factor(ab$classF, levels=l, ordered=TRUE)
 
 # list all parameter names, and split individual repseqs apart, since they will
 # be in their own subdirectory; remove class and eigenvector columns
@@ -171,6 +191,7 @@ nc <- detectCores()
 cl <- makeCluster(nc)
 registerDoParallel(cl)
 l <- foreach(i=l, f=f, abf=abf, abnf=abnf, .inorder=FALSE, .multicombine=TRUE, .packages=c("ggplot2", "ggridges", "grid", "gridExtra", "dplyr")) %dopar% {
+	theme_set(th)
 	g1 <- ggviolin(abf, i, "class")
 	g2 <- ggviolin(abnf, i, "classF")
 	g3 <- ggridge(abf, i, "class")
@@ -201,6 +222,7 @@ abl <- lapply(coef, function(x){
 })
 # generate plots
 l <- foreach(ab=abl, f=f, .inorder=FALSE, .multicombine=TRUE, .packages=c("ggplot2", "grid", "gridExtra", "dplyr")) %dopar% {
+	theme_set(th)
 	g1 <- ggfit(ab, "res", "Model residuals versus fitted values")
 	g2 <- ggfit(ab, "eigenvectornf",
 		"Observed eigenvector values versus fitted values", method="lm")

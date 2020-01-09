@@ -143,4 +143,4 @@ Preliminary work:
 Raphael Mourad <raphael.mourad@ibcg.biotoul.fr>, Assistant professor at University of Toulouse III, France
 
 Additional help:
-Jean-Baptiste Claude <jean-baptise.claude@ens-lyon.fr>, Bioinformatics Research Engineer, LBMC, Ens Lyon, France
+Jean-Baptiste Claude <jean-baptiste.claude@ens-lyon.fr>, Bioinformatics Research Engineer, LBMC, Ens Lyon, France

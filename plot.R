@@ -77,8 +77,10 @@ ggridge <- function(ab, var, class){
 	ab %>%
 		mutate_at(class, ~factor(!!sym(class), levels=rev(levels(!!sym(class))), ordered=TRUE)) %>%
 		ggplot(aes(!!sym(var), !!sym(class), fill=!!sym(class))) +
-			scale_fill_discrete(guide=FALSE) +
-			geom_density_ridges2(na.rm=TRUE)
+			geom_density_ridges2(jittered_points=TRUE, size=0.3, alpha=0.6,
+				point_size=0.3, point_color="black", point_alpha=0.1,
+				rel_min_height=0.005, na.rm=TRUE) +
+			scale_fill_ordinal(guide=FALSE)
 }
 
 # scatter plots: takes a data.frame with eigenvector and parameter; parameter

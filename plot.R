@@ -57,18 +57,23 @@ ggcor <- function(cm){
 # violin plots: takes a data.frame with class and parameter; parameter name;
 # class variable to use
 ggviolin <- function(ab, var, class){
-	# for non-integral "counts" like %gc, don't label violin plots
-	# otherwise, annotate each violin with its number of observations
-	n <- ab %>%
+	m <- ab %>%
+		# for non-integral "counts" like %gc, don't label violin plots
+		# otherwise, annotate each violin with its number of observations
 		group_by(!!sym(class)) %>%
 		summarize(m=ifelse(typeof(!!sym(var)) == "integer",
 			sum(!!sym(var)), rep(NA)))
-	n <- setNames(n$m, as.character(pull(n, !!sym(class))))
-	ggplot(ab, aes(!!sym(class), !!sym(var))) +
-		geom_violin(na.rm=TRUE) +
-		theme(axis.text.x=element_text(angle=90, vjust=-0.1)) +
-		annotate("text", x=names(n), y=max(ab[,var]) + (max(nchar(n))-1)/.pt,
-			label=n, angle=90, size=3)
+	ab %>%
+		ggplot(aes(!!sym(class), !!sym(var))) +
+			geom_violin(scale="count", trim=TRUE,
+				size=0.3, na.rm=TRUE) +
+			geom_jitter(size=0.1, height=0, alpha=0.05, show.legend=FALSE) +
+			scale_fill_viridis_d(guide=FALSE) +
+			theme(axis.text.x=element_text(angle=90, vjust=-0.1)) +
+			geom_text(data=m, aes(!!sym(class),
+				max(ab[,var], na.rm=TRUE) + (max(nchar(m))-1)/.pt,
+				label=m),
+				color="black", angle=45, size=3)
 }
 
 # ridgeline plots: takes a data.frame with class and parameter; parameter name;
@@ -114,6 +119,49 @@ ggscatter <- function(ab, var, pc1){
 	}
 	# put enrichment summary on top of scatter plot
 	grid.arrange(g, top=textGrob(s))
+}
+
+ggdensity2d <- function(ab, var, pc1){
+	ggplot(ab, aes(!!sym(var), !!sym(pc1), color=classc, fill=classc)) +
+		stat_density_2d(geom="polygon", alpha=0.05, na.rm=TRUE) +
+		scale_color_brewer(name="subclasses", palette="Paired", aesthetics=c("fill", "color"))
+}
+
+ggdensity2dxor <- function(ab, var, pc1, name){
+	ab %>%
+		mutate(classc=ifelse(classc==name, name, "others")) %>%
+		ggplot(aes(!!sym(var), !!sym(pc1), color=classc, fill=classc)) +
+			stat_density_2d(geom="polygon", alpha=0.05, na.rm=TRUE) +
+			scale_color_manual(name="subclasses", values=c("red", "grey"), aesthetics=c("fill", "color"))
+}
+
+# split bins into classes for exploded scatterplots as specified
+scattersplit <- function(x){
+	cl <- c("1_AlwaysA.HG",
+		"2_AorB.HG",
+		"3_AlwaysA.!HG.Ac",
+		"4_AlwaysA.!HG.!Ac",
+		"5_AorB.NG.Ac",
+		"6_AorB.NG.!Ac",
+		"7_AorB.0G.Ac",
+		"8_AorB.0G.!Ac",
+		"9_AlwaysB.NG",
+		"10_AlwaysB.0G",
+		"11_AnyB.HG"
+	)
+	factor(ifelse(grepl("highgene.*AlwaysA", x), cl[1],
+		ifelse(grepl("^A.*highgene.*AorB", x), cl[2],
+		ifelse(grepl("[ol]gene.*AlwaysA.*hasact", x), cl[3],
+		ifelse(grepl("[ol]gene.*AlwaysA.*noact", x), cl[4],
+		ifelse(grepl("lgene.*AorB.*hasact", x), cl[5],
+		ifelse(grepl("lgene.*AorB.*noact", x), cl[6],
+		ifelse(grepl("nogene.*AorB.*hasact", x), cl[7],
+		ifelse(grepl("nogene.*AorB.*noact", x), cl[8],
+		ifelse(grepl("lgene.*AlwaysB", x), cl[9],
+		ifelse(grepl("nogene.*AlwaysB", x), cl[10],
+		ifelse(grepl("^B.*highgene", x), cl[11],
+		NA))))))))))),
+		levels=cl, ordered=TRUE)
 }
 
 # read table of all counts, removing useless columns
@@ -173,10 +221,11 @@ abf <- ab %>%
 		class2=ifelse(grepl("^A_", class), "A", "B"),
 		class3=ifelse(grepl("^A_.*AlwaysA", class), "A",
 			ifelse(grepl("^B_.*AlwaysB", class), "B",
-			NA)))
+			NA)),
+		classc=scattersplit(class))
 abf <- lapply(l, function(x){
 	abf %>%
-		select(class, class2, class3, HUVEC, !!sym(x))
+		select(class, class2, class3, classc, HUVEC, !!sym(x))
 })
 abnf <- ab %>%
 	filter(!grepl("^NA_", classF)) %>%
@@ -184,10 +233,11 @@ abnf <- ab %>%
 		class2=ifelse(grepl("^A_", classF), "A", "B"),
 		class3=ifelse(grepl("^A_.*AlwaysA", classF), "A",
 			ifelse(grepl("^B_.*AlwaysB", classF), "B",
-			NA)))
+			NA)),
+		classc=scattersplit(classF))
 abnf <- lapply(l, function(x){
 	abnf %>%
-		select(classF, class2, class3, HUVECnoflank, !!sym(x))
+		select(classF, class2, class3, classc, HUVECnoflank, !!sym(x))
 })
 nc <- detectCores()
 cl <- makeCluster(nc)
@@ -200,7 +250,17 @@ l <- foreach(i=l, f=f, abf=abf, abnf=abnf, .inorder=FALSE, .multicombine=TRUE, .
 	g4 <- ggridge(abnf, i, "classF")
 	g5 <- ggscatter(abf, i, "HUVEC")
 	g6 <- ggscatter(abnf, i, "HUVECnoflank")
+	g7 <- ggdensity2d(abf, i, "HUVEC")
+	u <- lapply(levels(abf$classc), function(x) ggdensity2dxor(abf, i, "HUVEC", x))
+	g8 <- ggdensity2d(abnf, i, "HUVECnoflank")
+	v <- lapply(levels(abnf$classc), function(x) ggdensity2dxor(abnf, i, "HUVECnoflank", x))
 	write.pdf(grid.arrange(g1, g2, g3, g4, g5, g6), f, width=24, height=20)
+	write.pdf(grid.arrange(g7, u[[1]], u[[2]], u[[3]], u[[4]], u[[5]], u[[6]], u[[7]],
+		u[[8]], u[[9]], u[[10]], u[[11]]),
+		sub("pdf$", "exploded.pdf", f), width=24, height=20)
+	write.pdf(grid.arrange(g8, v[[1]], v[[2]], v[[3]], v[[4]], v[[5]], v[[6]], v[[7]],
+		v[[8]], v[[9]], v[[10]], v[[11]]),
+		sub("pdf$", "nfexploded.pdf", f), width=24, height=20)
 }
 
 # generate model plots

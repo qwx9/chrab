@@ -398,7 +398,9 @@ mkrepseq <- function(){
 		list(f="prep/huvec.repseq.proa.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01))),
 		list(f="prep/huvec.repseq.proa.te.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01 & Class %in% c("SINE", "RC", "SVA", "LTR", "LINE", "DNA")))),
 		list(f="prep/huvec.repseq.proa.nonte.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01 & Class %in% c("tRNA", "snRNA", "Simple_repeat", "scRNA", "Satellite", "rRNA", "Low_complexity")))),
-		list(f="prep/huvec.repseq.trna.bed.gz", q=quote(repcor %>% filter(Class == "tRNA")))
+		list(f="prep/huvec.repseq.trna.bed.gz", q=quote(repcor %>% filter(Class == "tRNA"))),
+		list(f="prep/huvec.repseq.proa.alu.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01 & Family == "Alu"))),
+		list(f="prep/huvec.repseq.proa.nonalu.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01 & Family != "Alu")))
 	)
 	f <- paste0("prep/repseq/huvec.repseq.only.",
 		gsub("\\(|\\)", "", gsub("/", "-", repcor$Name)), ".bed.gz")

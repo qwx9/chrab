@@ -211,10 +211,10 @@ mkgc5 <- function(f){
 	}
 	# filter unused chromosomes and merge rows with same start and end (for
 	# chunks that cut in the middle of a bin)
-	chrom <- read.table("prep/hg19.txt", header=TRUE)
+	chrom <- read.table("prep/hg19.txt")
 	df <- df %>%
 		mutate(chr=as.character(l[chr])) %>%
-		filter(chr %in% chrom$chrom) %>%
+		filter(chr %in% chrom$V1) %>%
 		group_by(chr, start, end) %>%
 		summarize(n=sum(n), nt=sum(nt)) %>%
 		ungroup
@@ -223,11 +223,11 @@ mkgc5 <- function(f){
 	ends <- df %>%
 		group_by(chr) %>%
 		summarize(len=max(end))
-	l <- unlist(lapply(chrom$chr, function(x) if(chrom[chrom$chrom==x,2] > ends[ends$chr==x,2]) as.character(x)))
+	l <- unlist(lapply(chrom$V1, function(x) if(chrom[chrom$V1==x,2] > ends[ends$chr==x,2]) as.character(x)))
 	df2 <- bind_rows(lapply(l, function(i){
-		a <- chrom[chrom$chrom == i,]
+		a <- chrom[chrom$V1 == i,]
 		b <- ends[ends$chr == i,]
-		b <- data.frame(chr=factor(i, levels=levels(chrom$chrom)), start=b$len, end=b$len+100000, n=NA, nt=NA)
+		b <- data.frame(chr=factor(i, levels=levels(chrom$V1)), start=b$len, end=b$len+100000, n=NA, nt=NA)
 		r <- b
 		while(r$end < a$size){
 			r$start <- r$end
@@ -246,19 +246,15 @@ mkgc5 <- function(f){
 		write.gzip(f)
 }
 
-# get hg19 chromosome size from ucsc mysql server, filtering uninteresting
-# chromosomes, and sorting by name like sort -V
+# hg19 chromosome size from ucsc ftp server: filter uninteresting chromosomes,
+# and sort by name like sort -V
 mkchr <- function(f){
-	o <- src_mysql("hg19", "genome-euro-mysql.soe.ucsc.edu", username="genome")
-	t <- o %>%
-		tbl("chromInfo") %>%
-		select(chrom, size) %>%
-		collect %>%
-		filter(grepl("chr[1-9XY][0-9]?$", chrom)) %>%
-		mutate(chr=ifelse(nchar(chrom) == 4 & substr(chrom, 4, 4) %in% 0:9, paste0("chr0", substr(chrom, 4, 4)), chrom)) %>%
-		arrange(chr) %>%
-		select(-chr) %>%
-		write.tsv(f, col.names=TRUE)
+	read.table("hg19/hg19.txt", header=FALSE, stringsAsFactors=FALSE) %>%
+		filter(grepl("chr[1-9XY][0-9]?$", V1)) %>%
+		mutate(v=ifelse(nchar(V1) == 4 & substr(V1, 4, 4) %in% 0:9, paste0("chr0", substr(V1, 4, 4)), V1)) %>%
+		arrange(v) %>%
+		select(-v) %>%
+		write.tsv(f)
 }
 
 # extract a/b profile for each 100kb bin from excel table

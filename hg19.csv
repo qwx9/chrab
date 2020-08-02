@@ -3,3 +3,4 @@ hg19 repeatmasker output,ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/h
 hg19 known genes,ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/database/ncbiRefSeq.txt.gz,hg19/ncbiRefSeq.txt.gz
 hg19 gc content,ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.gc5Base.wigVarStep.gz,hg19/hg19.gc5Base.wigVarStep.gz
 hg19 chromHMM tracks,ftp://hgdownload.soe.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeBroadHmm/wgEncodeBroadHmmHuvecHMM.bed.gz,hg19/wgEncodeBroadHmmHuvecHMM.bed.gz
+hg19 chrom sizes,ftp://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/hg19.chrom.sizes,hg19/hg19.txt

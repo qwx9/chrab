@@ -86,12 +86,15 @@ cntpref <- function(x, g){
 
 # read and apply some corrections to the consensus gene list
 mkrefseq <- function(f){
+	# summarize .groups="drop": summarize drops 1 grouping variable by default;
+	# if there are more grouping variables, it emits a "friendly" warning that
+	# only x grouping variables remain
 	read.table("hg19/ncbiRefSeq.txt.gz") %>%
 		# rename interesting columns
 		select(chr=V3, start=V5, end=V6, strand=V4, gene=V13) %>%
 		# merge genes with same name on the same strand and chromosome
 		group_by(chr, gene, strand) %>%
-		summarize(start=min(start), end=max(end)) %>%
+		summarize(start=min(start), end=max(end), .groups="drop") %>%
 		# sort by chromosome, start and end
 		arrange(chr, start, end) %>%
 		# for each chromosome, generate a list of overlapping gene
@@ -112,8 +115,7 @@ mkrefseq <- function(f){
 		mutate(gene=ifelse(overg!="", paste0(as.character(gene[1]), "_", "comb"), as.character(gene))) %>%
 		# merge marked genes
 		group_by(chr, gene, strand) %>%
-		summarize(start=min(start), end=max(end)) %>%
-		ungroup %>%
+		summarize(start=min(start), end=max(end), .groups="drop") %>%
 		# sort and rearrange columns as needed by bedtools, using an
 		# empty score column
 		arrange(chr, start, end, strand) %>%
@@ -259,9 +261,11 @@ mkchr <- function(f){
 
 # extract a/b profile for each 100kb bin from excel table
 mkab <- function(f){
+	suppressWarnings(
 	read_xlsx("gf/Table-AouBouAlways.xlsx", col_types="text") %>%
 		mutate(start=format(as.integer(start)-1, scientific=FALSE, trim=TRUE)) %>%
 		group_by(chr) %>%
+		# as.numeric coersion introduces NA since HUVEC column contains "NA" values, warnings are inoffensive
 		mutate(sign=sign(as.numeric(HUVEC)), sign=ifelse(sign==0,1,sign),
 			trans=sign!=lead(sign), trans=ifelse(is.na(trans), FALSE, trans),
 			flank=trans | lead(trans, default=FALSE) | lag(trans, default=FALSE) | lag(trans, 2, default=FALSE)) %>%
@@ -269,6 +273,7 @@ mkab <- function(f){
 		mutate(HUVECnoflank=ifelse(flank, NA, HUVEC)) %>%
 		select(chr, start, end, AorBvec, HUVEC, HUVECnoflank, IMR90) %>%
 		write.tsv(f, col.names=TRUE)
+	)
 }
 
 # extract repseq list and correlation from excel file

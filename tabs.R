@@ -102,11 +102,16 @@ for(i in list.files("cnt", pattern="*.gz", full.names=TRUE)){
 		mutate(!!s:=addcol(chr, i))
 }
 
-# special case: cap groseq score outliers to an upper boudary
+# special case: log10 scale for groseq and h3k9me3
 ab <- ab %>%
-	mutate(huvec.groseq.capped.meanofmean=capcnt(huvec.groseq.meanofmean),
-		huvec.groseq.capped.meanofsum=capcnt(huvec.groseq.meanofsum),
-		huvec.groseq.capped.sumofsum=capcnt(huvec.groseq.sumofsum))
+	mutate(huvec.groseq.log10.meanofmean=log10(huvec.groseq.meanofmean+1),
+		huvec.groseq.log10.meanofsum=log10(huvec.groseq.meanofsum+1),
+		huvec.groseq.log10.sumofsum=log10(huvec.groseq.sumofsum+1)) %>%
+	select(-huvec.groseq.meanofmean, -huvec.groseq.meanofsum, -huvec.groseq.sumofsum)
+ab <- ab %>%
+	mutate(huvec.h3k9me3.log10.mean=log10(huvec.h3k9me3.mean+1),
+		huvec.h3k9me3.log10.sum=log10(huvec.h3k9me3.sum+1)) %>%
+	select(-huvec.h3k9me3.mean, -huvec.h3k9me3.sum)
 
 # write out non-individual repseq count table
 write.gzip(ab, "tabs/counts.tsv.gz", TRUE)

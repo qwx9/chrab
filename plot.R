@@ -182,7 +182,7 @@ l <- lapply(c("lm.eparm.tsv", "lm.gparm.tsv"), read.parms)
 if(file.access("lm/cor.pdf", 4) != 0){
 	read.table("tabs/lmparmscor.tsv", header=TRUE) %>%
 		ggcor %>%
-		write.pdf("lm/cor.pdf")
+		ggsave(filename="lm/cor.pdf", width=24, height=20)
 }
 
 # reorder classes for plots
@@ -295,6 +295,6 @@ l <- foreach(ab=abl, f=f, .inorder=FALSE, .multicombine=TRUE, .packages=c("ggplo
 	g2 <- ggfit(ab, "eigenvectornf",
 		"Observed eigenvector values versus fitted values", method="lm")
 	g3 <- ggqnorm(ab)
-	write.pdf(grid.arrange(g1, g2, g3), f, width=24, height=20)
+	ggsave(f, grid.arrange(g1, g2, g3), width=24, height=20)
 }
 stopCluster(cl)

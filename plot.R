@@ -10,12 +10,6 @@ library(doParallel)
 })
 source("lib.R")
 
-write.pdf <- function(x, file, width=12.1, height=9.7){
-	pdf(file, width, height)
-	print(x)
-	dev.off()
-}
-
 # quantile-quantile plot against normal distribution
 ggqnorm <- function(d){
 	ggplot(d, aes(sample=res)) +
@@ -121,13 +115,20 @@ ggscatter <- function(ab, var, pc1){
 	grid.arrange(g, top=textGrob(s))
 }
 
+# stat_density_2d uses MASS::kde2d which in turn uses MASS:bandwidth.nrd,
+# which subtracts 3rd quantile from 1st for a bandwidth estimate.
+# this obviously fails if we have too many 0 counts.
 ggdensity2d <- function(ab, var, pc1){
+	if(quantile(ab[,var], 0.5) == 0)
+		return(NULL)
 	ggplot(ab, aes(!!sym(var), !!sym(pc1), color=classc, fill=classc)) +
 		stat_density_2d(geom="polygon", alpha=0.05, na.rm=TRUE) +
 		scale_color_brewer(name="subclasses", palette="Paired", aesthetics=c("fill", "color"))
 }
 
 ggdensity2dxor <- function(ab, var, pc1, name){
+	if(quantile(ab[,var], 0.5) == 0)
+		return(NULL)
 	ab %>%
 		mutate(classc=ifelse(classc==name, name, "others")) %>%
 		ggplot(aes(!!sym(var), !!sym(pc1), color=classc, fill=classc)) +
@@ -250,17 +251,22 @@ l <- foreach(i=l, f=f, abf=abf, abnf=abnf, .inorder=FALSE, .multicombine=TRUE, .
 	g4 <- ggridge(abnf, i, "classF")
 	g5 <- ggscatter(abf, i, "HUVEC")
 	g6 <- ggscatter(abnf, i, "HUVECnoflank")
+	g <- grid.arrange(g1, g2, g3, g4, g5, g6)
+	ggsave(f, g, width=24, height=20)
 	g7 <- ggdensity2d(abf, i, "HUVEC")
-	u <- lapply(levels(abf$classc), function(x) ggdensity2dxor(abf, i, "HUVEC", x))
+	if(!is.null(g7)){
+		u <- lapply(levels(abf$classc), function(x) ggdensity2dxor(abf, i, "HUVEC", x))
+		g <- grid.arrange(g7, u[[1]], u[[2]], u[[3]], u[[4]], u[[5]], u[[6]], u[[7]],
+			u[[8]], u[[9]], u[[10]], u[[11]])
+		ggsave(sub("pdf$", "exploded.pdf", f), g, width=24, height=20)
+	}
 	g8 <- ggdensity2d(abnf, i, "HUVECnoflank")
-	v <- lapply(levels(abnf$classc), function(x) ggdensity2dxor(abnf, i, "HUVECnoflank", x))
-	write.pdf(grid.arrange(g1, g2, g3, g4, g5, g6), f, width=24, height=20)
-	write.pdf(grid.arrange(g7, u[[1]], u[[2]], u[[3]], u[[4]], u[[5]], u[[6]], u[[7]],
-		u[[8]], u[[9]], u[[10]], u[[11]]),
-		sub("pdf$", "exploded.pdf", f), width=24, height=20)
-	write.pdf(grid.arrange(g8, v[[1]], v[[2]], v[[3]], v[[4]], v[[5]], v[[6]], v[[7]],
-		v[[8]], v[[9]], v[[10]], v[[11]]),
-		sub("pdf$", "nfexploded.pdf", f), width=24, height=20)
+	if(!is.null(g8)){
+		v <- lapply(levels(abnf$classc), function(x) ggdensity2dxor(abnf, i, "HUVECnoflank", x))
+		g <- grid.arrange(g8, v[[1]], v[[2]], v[[3]], v[[4]], v[[5]], v[[6]], v[[7]],
+			v[[8]], v[[9]], v[[10]], v[[11]])
+		ggsave(sub("pdf$", "nfexploded.pdf", f), g, width=24, height=20)
+	}
 }
 
 # generate model plots

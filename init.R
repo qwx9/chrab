@@ -35,7 +35,8 @@ for(i in req)
 dirs <- c(
 	"hg19",
 	"huvec",
-	"imr90",
+	"gm12878",
+	"bcell",
 	"prep",
 	"cnt",
 	"plot",

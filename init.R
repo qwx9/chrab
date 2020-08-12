@@ -54,5 +54,5 @@ for(i in dirs)
 # get data pointed to in each csv file
 getfromcsv("encode.csv")
 getfromcsv("geo.csv")
-getfromcsv("hg19.csv")
+getfromcsv("ucsc.csv")
 getfromcsv("supp.csv")

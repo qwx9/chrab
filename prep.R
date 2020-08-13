@@ -356,12 +356,12 @@ mkbcellchromhmm <- function(file, name){
 		"E2",
 		"E6",
 		"E5")
-	l <- c("1.active.promoter",
-		"2.weak.promoter",
-		"3.poised.promoter",
-		"4.strong.enhancer",
-		"5.strong.enhancer",
-		"6.weak.enhancer")
+	l <- c("1.active_promoter",
+		"2.weak_promoter",
+		"3.poised_promoter",
+		"4.strong_enhancer",
+		"5.strong_enhancer",
+		"6.weak_enhancer")
 	f <- paste0("prep/", name, ".chromhmm.", l, ".bed.gz")
 	i <- which(file.access(f, 4) != 0)
 	if(length(i) != 0){
@@ -373,6 +373,7 @@ mkbcellchromhmm <- function(file, name){
 				# filter uninteresting chromosomes
 				mutate(V1=as.character(V1)) %>%
 				filter(grepl("chr[1-9XY][0-9]?$", V1)) %>%
+				mutate(V4=rep(sub("\\..*", "", l[i]))) %>%
 				# sort -V order
 				mutate(v=ifelse(nchar(V1) == 4 & substr(V1, 4, 4) %in% 0:9, paste0("chr0", substr(V1, 4, 4)), V1)) %>%
 				arrange(v) %>%

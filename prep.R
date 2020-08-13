@@ -260,24 +260,25 @@ mkchr <- function(f){
 }
 
 # extract a/b profile for each 100kb bin from excel table
-mkab <- function(f){
+mkab <- function(f, cell){
+	nf <- paste0(cell, "noflank")
 	suppressWarnings(
 	read_xlsx("gf/Table-AouBouAlways.xlsx", col_types="text") %>%
 		mutate(start=format(as.integer(start)-1, scientific=FALSE, trim=TRUE)) %>%
 		group_by(chr) %>%
-		# as.numeric coersion introduces NA since HUVEC column contains "NA" values, warnings are inoffensive
-		mutate(sign=sign(as.numeric(HUVEC)), sign=ifelse(sign==0,1,sign),
+		# as.numeric coersion introduces NA since cell column contains "NA" values, warnings are inoffensive
+		mutate(sign=sign(as.numeric(!!sym(cell))), sign=ifelse(sign==0,1,sign),
 			trans=sign!=lead(sign), trans=ifelse(is.na(trans), FALSE, trans),
 			flank=trans | lead(trans, default=FALSE) | lag(trans, default=FALSE) | lag(trans, 2, default=FALSE)) %>%
 		ungroup %>%
-		mutate(HUVECnoflank=ifelse(flank, NA, HUVEC)) %>%
-		select(chr, start, end, AorBvec, HUVEC, HUVECnoflank, IMR90) %>%
+		mutate(!!nf:=ifelse(flank, NA, !!sym(cell))) %>%
+		select(chr, start, end, AorBvec, !!sym(cell), !!sym(nf)) %>%
 		write.tsv(f, col.names=TRUE)
 	)
 }
 
 # extract repseq list and correlation from excel file
-mkhuvecrep <- function(f){
+mkallrep <- function(f){
 	read_xlsx("gf/Kassiotis-List.ORI.RepSeq.CorrB-Fourel.11july.xlsx", col_types="text",
 		.name_repair=~gsub(" ", "_", .x)) %>%
 		select(-Rank_CorrB) %>%
@@ -310,10 +311,10 @@ mkgroseq <- function(f){
 }
 
 # extract silencer list from suppl table
-mksilencer <- function(f){
+mksilencer <- function(f, cell){
 	zfd <- unz("huvec/ovcharenko2019.supp.tab.s2.txt.zip", "Supplemental_Table_S2.txt")
 	read.table(zfd, skip=1) %>%
-		filter(row_number() %in% contains("HUVEC", vars=V1)) %>%
+		filter(row_number() %in% contains(cell, vars=V1)) %>%
 		mutate(pos=strsplit(as.character(V2), ":|-"),
 			chr=sapply(pos, function(x) x[1]),
 			start=sapply(pos, function(x) x[2]),
@@ -329,18 +330,60 @@ mkconv <- function(){
 		list(f="prep/hg19.refseq.bed.gz", fn=mkrefseq),
 		list(f="prep/hg19.txt", fn=mkchr),
 		list(f="prep/hg19.gc.bed.gz", fn=mkgc5),
-		list(f="prep/ab.bed", fn=mkab),
-		list(f="prep/huvec.repseq.tsv", fn=mkhuvecrep),
-		list(f="prep/huvec.groseq.allrep.bed.gz", fn=mkgroseq),
-		list(f="prep/huvec.silencer.bed.gz", fn=mksilencer)
+		list(f="prep/hg19.repseq.tsv", fn=mkallrep),
+		list(f="prep/huvec.groseq.allrep.bed.gz", fn=mkgroseq)
 	)
 	for(i in l)
 		if(file.access(i$f, 4) != 0)
 			i$fn(i$f)
+	l <- list(
+		list(f="prep/huvec.ab.bed", fn=mkab, args="HUVEC"),
+		list(f="prep/gm12878.ab.bed", fn=mkab, args="GM12878"),
+		list(f="prep/bcell.ab.bed", fn=mkab, args="GM12878"),
+		list(f="prep/huvec.silencer.bed.gz", fn=mksilencer, args="HUVEC"),
+		list(f="prep/gm12878.silencer.bed.gz", fn=mksilencer, args="GM12878"),
+		list(f="prep/bcell.silencer.bed.gz", fn=mksilencer, args="GM12878")
+	)
+	for(i in l)
+		if(file.access(i$f, 4) != 0)
+			i$fn(i$f, i$args)
 }
 
-# split chromhmm track into beds for each class
-mkchromhmm <- function(){
+mkbcellchromhmm <- function(file, name){
+	n <- c("E1",
+		"E3",
+		"E4",
+		"E2",
+		"E6",
+		"E5")
+	l <- c("1.active.promoter",
+		"2.weak.promoter",
+		"3.poised.promoter",
+		"4.strong.enhancer",
+		"5.strong.enhancer",
+		"6.weak.enhancer")
+	f <- paste0("prep/", name, ".chromhmm.", l, ".bed.gz")
+	i <- which(file.access(f, 4) != 0)
+	if(length(i) != 0){
+		zfd <- unz("bcell/subero2018.chromhmm.zip", file)
+		x <- read.table(zfd)
+		x <- sapply(i, function(i){
+			x %>%
+				filter(V4 == n[i]) %>%
+				# filter uninteresting chromosomes
+				mutate(V1=as.character(V1)) %>%
+				filter(grepl("chr[1-9XY][0-9]?$", V1)) %>%
+				# sort -V order
+				mutate(v=ifelse(nchar(V1) == 4 & substr(V1, 4, 4) %in% 0:9, paste0("chr0", substr(V1, 4, 4)), V1)) %>%
+				arrange(v) %>%
+				select(-v) %>%
+				write.gzip(f[i])
+			NULL
+		})
+	}
+}
+
+mkucscchromhmm <- function(file, name){
 	l <- c("1_Active_Promoter",
 		"2_Weak_Promoter",
 		"3_Poised_Promoter",
@@ -348,10 +391,10 @@ mkchromhmm <- function(){
 		"5_Strong_Enhancer",
 		"6_Weak_Enhancer",
 		"7_Weak_Enhancer")
-	f <- paste0("prep/huvec.chromhmm.", tolower(sub("_", ".", l)), ".bed.gz")
+	f <- paste0("prep/", name, ".chromhmm.", tolower(sub("_", ".", l)), ".bed.gz")
 	i <- which(file.access(f, 4) != 0)
 	if(length(i) != 0){
-		x <- read.table("hg19/wgEncodeBroadHmmHuvecHMM.bed.gz")
+		x <- read.table(file)
 		x <- sapply(i, function(i){
 			x %>%
 				filter(V4 == l[i]) %>%
@@ -363,12 +406,19 @@ mkchromhmm <- function(){
 	}
 }
 
+# split chromhmm track into beds for each class
+mkchromhmm <- function(){
+	mkucscchromhmm("hg19/wgEncodeBroadHmmHuvecHMM.bed.gz", "huvec")
+	mkucscchromhmm("hg19/wgEncodeBroadHmmGm12878HMM.bed.gz", "gm12878")
+	mkbcellchromhmm("GCBC1_12_segments.bed", "bcell")
+}
+
 # generate beds for each subset of repseqs after extracting all repseqs from
 # repeatmasker's output
 mkrepseq <- function(){
 	repmask <- read.table("hg19/hg19.fa.out.gz", skip=2) %>%
 		select(chr=V5, start=V6, end=V7, id=V10)
-	repcor <- read.table("prep/huvec.repseq.tsv", header=TRUE)
+	repcor <- read.table("prep/hg19.repseq.tsv", header=TRUE)
 	psil <- read_xlsx("gf/Liste.ProtoSil.Forts-Etudiants-14nov2019.xlsx", col_types="text",
 		.name_repair=~gsub(" ", "_", .x)) %>%
 		select(4, 5) %>%
@@ -386,28 +436,28 @@ mkrepseq <- function(){
 	ebvnonb <- data.frame(Name=ebv$nonb)
 
 	l <- list(
-		list(f="prep/huvec.repseq.te.bed.gz", q=quote(repcor %>% filter(Class %in% c("SINE", "RC", "SVA", "LTR", "LINE", "DNA")))),
-		list(f="prep/huvec.repseq.ltr.bed.gz", q=quote(repcor %>% filter(Class == "LTR"))),
-		list(f="prep/huvec.repseq.l1.bed.gz", q=quote(repcor %>% filter(Class == "LINE" & Family == "L1"))),
-		list(f="prep/huvec.repseq.l1.ltr.bed.gz", q=quote(repcor %>% filter(Class %in% c("LTR", "LINE")))),
-		list(f="prep/huvec.repseq.prob.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01))),
-		list(f="prep/huvec.repseq.prob.te.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class %in% c("SINE", "RC", "SVA", "LTR", "LINE", "DNA")))),
-		list(f="prep/huvec.repseq.prob.nonte.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class %in% c("tRNA", "snRNA", "Simple_repeat", "scRNA", "Satellite", "rRNA", "Low_complexity")))),
-		list(f="prep/huvec.repseq.prob.sr.lc.sat.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class %in% c("Simple_repeat", "Low_complexity", "Satellite")))),
-		list(f="prep/huvec.repseq.prob.ltr.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class == "LTR"))),
-		list(f="prep/huvec.repseq.prob.l1.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class == "LINE" & Family == "L1"))),
-		list(f="prep/huvec.repseq.prob.l1.ltr.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class %in% c("LTR", "LINE")))),
-		list(f="prep/huvec.repseq.psil.prob.bed.gz", q=quote(psilprob)),
-		list(f="prep/huvec.repseq.ebv.prob.bed.gz", q=quote(ebvprob)),
-		list(f="prep/huvec.repseq.ebv.nonprob.bed.gz", q=quote(ebvnonb)),
-		list(f="prep/huvec.repseq.proa.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01))),
-		list(f="prep/huvec.repseq.proa.te.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01 & Class %in% c("SINE", "RC", "SVA", "LTR", "LINE", "DNA")))),
-		list(f="prep/huvec.repseq.proa.nonte.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01 & Class %in% c("tRNA", "snRNA", "Simple_repeat", "scRNA", "Satellite", "rRNA", "Low_complexity")))),
-		list(f="prep/huvec.repseq.trna.bed.gz", q=quote(repcor %>% filter(Class == "tRNA"))),
-		list(f="prep/huvec.repseq.proa.alu.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01 & Family == "Alu"))),
-		list(f="prep/huvec.repseq.proa.nonalu.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01 & Family != "Alu")))
+		list(f="prep/hg19.repseq.te.bed.gz", q=quote(repcor %>% filter(Class %in% c("SINE", "RC", "SVA", "LTR", "LINE", "DNA")))),
+		list(f="prep/hg19.repseq.ltr.bed.gz", q=quote(repcor %>% filter(Class == "LTR"))),
+		list(f="prep/hg19.repseq.l1.bed.gz", q=quote(repcor %>% filter(Class == "LINE" & Family == "L1"))),
+		list(f="prep/hg19.repseq.l1.ltr.bed.gz", q=quote(repcor %>% filter(Class %in% c("LTR", "LINE")))),
+		list(f="prep/hg19.repseq.prob.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01))),
+		list(f="prep/hg19.repseq.prob.te.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class %in% c("SINE", "RC", "SVA", "LTR", "LINE", "DNA")))),
+		list(f="prep/hg19.repseq.prob.nonte.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class %in% c("tRNA", "snRNA", "Simple_repeat", "scRNA", "Satellite", "rRNA", "Low_complexity")))),
+		list(f="prep/hg19.repseq.prob.sr.lc.sat.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class %in% c("Simple_repeat", "Low_complexity", "Satellite")))),
+		list(f="prep/hg19.repseq.prob.ltr.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class == "LTR"))),
+		list(f="prep/hg19.repseq.prob.l1.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class == "LINE" & Family == "L1"))),
+		list(f="prep/hg19.repseq.prob.l1.ltr.bed.gz", q=quote(repcor %>% filter(Moyenne_corA < -0.01 & Class %in% c("LTR", "LINE")))),
+		list(f="prep/hg19.repseq.psil.prob.bed.gz", q=quote(psilprob)),
+		list(f="prep/hg19.repseq.ebv.prob.bed.gz", q=quote(ebvprob)),
+		list(f="prep/hg19.repseq.ebv.nonprob.bed.gz", q=quote(ebvnonb)),
+		list(f="prep/hg19.repseq.proa.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01))),
+		list(f="prep/hg19.repseq.proa.te.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01 & Class %in% c("SINE", "RC", "SVA", "LTR", "LINE", "DNA")))),
+		list(f="prep/hg19.repseq.proa.nonte.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01 & Class %in% c("tRNA", "snRNA", "Simple_repeat", "scRNA", "Satellite", "rRNA", "Low_complexity")))),
+		list(f="prep/hg19.repseq.trna.bed.gz", q=quote(repcor %>% filter(Class == "tRNA"))),
+		list(f="prep/hg19.repseq.proa.alu.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01 & Family == "Alu"))),
+		list(f="prep/hg19.repseq.proa.nonalu.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01 & Family != "Alu")))
 	)
-	f <- paste0("prep/repseq/huvec.repseq.only.",
+	f <- paste0("prep/repseq/hg19.repseq.only.",
 		gsub("\\(|\\)", "", gsub("/", "-", repcor$Name)), ".bed.gz")
 	f <- c(sapply(l, function(x) x$f), f)
 	n <- c(sapply(l, function(x) as.character(eval(x$q)$Name)), as.character(repcor$Name))
@@ -423,22 +473,22 @@ mkrepseq <- function(){
 		write.gzip(repmask[repmask$id %in% n,], f)
 	stopCluster(cl)
 
-	if(file.access("prep/huvec.repseq.l1long.bed.gz", 4) != 0)
-		read.table("prep/huvec.repseq.l1.bed.gz") %>%
+	if(file.access("prep/hg19.repseq.l1long.bed.gz", 4) != 0)
+		read.table("prep/hg19.repseq.l1.bed.gz") %>%
 			filter(V3-V2 > 5000) %>%
-			write.gzip("prep/huvec.repseq.l1long.bed.gz")
-	if(file.access("prep/huvec.repseq.l1long.ltr.bed.gz", 4) != 0)
-		read.table("prep/huvec.repseq.l1.ltr.bed.gz") %>%
+			write.gzip("prep/hg19.repseq.l1long.bed.gz")
+	if(file.access("prep/hg19.repseq.l1long.ltr.bed.gz", 4) != 0)
+		read.table("prep/hg19.repseq.l1.ltr.bed.gz") %>%
 			filter(V3-V2 > 5000) %>%
-			write.gzip("prep/huvec.repseq.l1long.ltr.bed.gz")
-	if(file.access("prep/huvec.repseq.prob.l1long.bed.gz", 4) != 0)
-		read.table("prep/huvec.repseq.prob.l1.bed.gz") %>%
+			write.gzip("prep/hg19.repseq.l1long.ltr.bed.gz")
+	if(file.access("prep/hg19.repseq.prob.l1long.bed.gz", 4) != 0)
+		read.table("prep/hg19.repseq.prob.l1.bed.gz") %>%
 			filter(V3-V2 > 5000) %>%
-			write.gzip("prep/huvec.repseq.prob.l1long.bed.gz")
-	if(file.access("prep/huvec.repseq.prob.l1long.ltr.bed.gz", 4) != 0)
-		read.table("prep/huvec.repseq.prob.l1.ltr.bed.gz") %>%
+			write.gzip("prep/hg19.repseq.prob.l1long.bed.gz")
+	if(file.access("prep/hg19.repseq.prob.l1long.ltr.bed.gz", 4) != 0)
+		read.table("prep/hg19.repseq.prob.l1.ltr.bed.gz") %>%
 			filter(V3-V2 > 5000) %>%
-			write.gzip("prep/huvec.repseq.prob.l1long.ltr.bed.gz")
+			write.gzip("prep/hg19.repseq.prob.l1long.ltr.bed.gz")
 }
 
 # run all conversions

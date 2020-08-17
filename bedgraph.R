@@ -31,7 +31,7 @@ if(file.access("gf/results.csv", 4) == 0){
 # generate list of files to generate along with vector of source tables and
 # bedgraph names
 # add count files
-l <- list.files("cnt", pattern="*.gz", full.names=TRUE, recursive=TRUE)
+l <- list.files("cnt", pattern="\\.gz$", full.names=TRUE, recursive=TRUE)
 l1 <- data.frame(l=l,
 	f=sub("\\.bed", ".bedgraph", sub("^cnt/", "igv/", l)),
 	n=gsub("^(cnt/|cnt/repseq/)|\\.bed\\.gz", "", l),

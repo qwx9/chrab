@@ -339,49 +339,12 @@ mkconv <- function(){
 	l <- list(
 		list(f="prep/huvec.ab.bed", fn=mkab, args="HUVEC"),
 		list(f="prep/gm12878.ab.bed", fn=mkab, args="GM12878"),
-		list(f="prep/bcell.ab.bed", fn=mkab, args="GM12878"),
 		list(f="prep/huvec.silencer.bed.gz", fn=mksilencer, args="HUVEC"),
-		list(f="prep/gm12878.silencer.bed.gz", fn=mksilencer, args="GM12878"),
-		list(f="prep/bcell.silencer.bed.gz", fn=mksilencer, args="GM12878")
+		list(f="prep/gm12878.silencer.bed.gz", fn=mksilencer, args="GM12878")
 	)
 	for(i in l)
 		if(file.access(i$f, 4) != 0)
 			i$fn(i$f, i$args)
-}
-
-mkbcellchromhmm <- function(file, name){
-	n <- c("E1",
-		"E3",
-		"E4",
-		"E2",
-		"E6",
-		"E5")
-	l <- c("1.active_promoter",
-		"2.weak_promoter",
-		"3.poised_promoter",
-		"4.strong_enhancer",
-		"5.strong_enhancer",
-		"6.weak_enhancer")
-	f <- paste0("prep/", name, ".chromhmm.", l, ".bed.gz")
-	i <- which(file.access(f, 4) != 0)
-	if(length(i) != 0){
-		zfd <- unz("bcell/subero2018.chromhmm.zip", file)
-		x <- read.table(zfd)
-		x <- sapply(i, function(i){
-			x %>%
-				filter(V4 == n[i]) %>%
-				# filter uninteresting chromosomes
-				mutate(V1=as.character(V1)) %>%
-				filter(grepl("chr[1-9XY][0-9]?$", V1)) %>%
-				mutate(V4=rep(sub("\\..*", "", l[i]))) %>%
-				# sort -V order
-				mutate(v=ifelse(nchar(V1) == 4 & substr(V1, 4, 4) %in% 0:9, paste0("chr0", substr(V1, 4, 4)), V1)) %>%
-				arrange(v) %>%
-				select(-v) %>%
-				write.gzip(f[i])
-			NULL
-		})
-	}
 }
 
 mkucscchromhmm <- function(file, name){
@@ -411,7 +374,6 @@ mkucscchromhmm <- function(file, name){
 mkchromhmm <- function(){
 	mkucscchromhmm("hg19/wgEncodeBroadHmmHuvecHMM.bed.gz", "huvec")
 	mkucscchromhmm("hg19/wgEncodeBroadHmmGm12878HMM.bed.gz", "gm12878")
-	mkbcellchromhmm("GCBC1_12_segments.bed", "bcell")
 }
 
 # generate beds for each subset of repseqs after extracting all repseqs from

@@ -257,4 +257,3 @@ l <- c(
 df <- cbind(chr, readtabs(l, unique(chr$chr)))
 mktab(df, "huvec", "HUVEC", "HUVECnoflank")
 mktab(df, "gm12878", "GM12878", "GM12878noflank")
-mktab(df, "bcell", "GM12878", "GM12878noflank")

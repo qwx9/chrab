@@ -36,7 +36,6 @@ dirs <- c(
 	"hg19",
 	"huvec",
 	"gm12878",
-	"bcell",
 	"prep",
 	"cnt",
 	"plot",

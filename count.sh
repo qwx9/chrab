@@ -7,7 +7,7 @@
 # split hg19 into 100kb windows
 bedtools makewindows -g prep/hg19.txt -w 100000 >prep/hg19w.bed
 
-for i in huvec gm12878 bcell; do
+for i in huvec gm12878; do
 	for j in h3k4me3 h3k27ac h3k27me3 h3k4me3 dhs.rep1; do
 		if test -f $i/$j.bed.gz; then
 			cp $i/$j.bed.gz prep/$i.$j.bed.gz
@@ -17,7 +17,7 @@ done
 zcat huvec/h3k9me3.bedgraph.gz |\
 	grep -v '^\(track\|chrM\)' |\
 	gzip -c >prep/huvec.h3k9me3.bed.gz
-for i in gm12878 bcell; do
+for i in gm12878; do
 	zcat $i/h3k9me3.bed.gz |\
 		sort -k1V,1 -k2n,2 |\
 		awk '{print $1 "\t" $2 "\t" $3 "\t" $5}' |\
@@ -39,7 +39,7 @@ bedtools map -c 5 -o sum -null 0 -a prep/hg19w.bed -b prep/huvec.groseq.sum.bed.
 bedtools merge -s -d 1 -c 4,5,6 -o distinct,distinct,distinct -i prep/huvec.groseq.sum.bed.gz |\
 	gzip -c >prep/huvec.groseq.merged.bed.gz
 
-for i in huvec gm12878 bcell; do
+for i in huvec gm12878; do
 	bedtools map -c 4 -o mean -null 0 -a prep/hg19w.bed -b prep/$i.h3k9me3.bed.gz |\
 		gzip -c >cnt/$i.h3k9me3.mean.bed.gz
 	bedtools map -c 4 -o sum -null 0 -a prep/hg19w.bed -b prep/$i.h3k9me3.bed.gz |\

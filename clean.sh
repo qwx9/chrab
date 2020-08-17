@@ -1,2 +1,2 @@
 #!/bin/sh
-rm -rf cnt/* hg19/* huvec/* igv/* imr90/* plot/* prep/* lm/* tabs/*
+rm -rf cnt/* gm12878/* hg19/* huvec/* igv/* plot/* prep/* lm/* tabs/*

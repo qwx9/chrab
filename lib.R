@@ -33,7 +33,7 @@ read.parms <- function(file){
 # read two parameter tables and return all combinations between them
 # the very first combination should be NULL, NULL and is removed
 comb.parms <- function(x){
-	if(length(x) < 2)
+	if(!is.list(x) || length(x) < 2)
 		stop("read.parms: must have at least two lists to combine")
 	l <- apply(expand.grid(x[[1]], x[[2]]), 1, unlist)
 	names(l) <- apply(expand.grid(seq_along(x[[1]])-1, seq_along(x[[2]])-1), 1, function(x){

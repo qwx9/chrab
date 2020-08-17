@@ -4,17 +4,24 @@ library(dplyr)
 })
 source("lib.R")
 
+enrichment <- function(v, class){
+	vratio <- sum(v[class], na.rm=TRUE) / sum(v, na.rm=TRUE) * 100
+	binratio <- sum(class, na.rm=TRUE) / length(na.omit(class))
+	vratio / binratio
+}
+
 # return a row of descriptive statistics for a variable in the filtered
 # data.frame ab
-statsrow <- function(ab, var){
+statsrow <- function(ab, var, pc1list){
 	v <- ab[,var]
-	su <- sum(v, na.rm=TRUE)
+	ispc1 <- var %in% pc1list
 	if(all(is.na(v))){
 		data.frame(parm=var,
 			EanyA=NA,
 			EanyB=NA,
 			EalwaysA=NA,
 			EalwaysB=NA,
+			sum=NA,
 			min=NA,
 			max=NA,
 			mean=NA,
@@ -26,11 +33,13 @@ statsrow <- function(ab, var){
 			stringsAsFactors=FALSE
 		)
 	}else{
+		# don't calculate enrichment and things that don't make sense for eigenvectors
 		data.frame(parm=var,
-			EanyA=sum(v[ab$anyA], na.rm=TRUE) / su * 100,
-			EanyB=sum(v[ab$anyB], na.rm=TRUE) / su * 100,
-			EalwaysA=sum(v[ab$alwaysA], na.rm=TRUE) / su * 100,
-			EalwaysB=sum(v[ab$alwaysB], na.rm=TRUE) / su * 100,
+			EanyA=ifelse(ispc1, NA, enrichment(v, ab$anyA)),
+			EanyB=ifelse(ispc1, NA, enrichment(v, ab$anyB)),
+			EalwaysA=ifelse(ispc1, NA, enrichment(v, ab$alwaysA)),
+			EalwaysB=ifelse(ispc1, NA, enrichment(v, ab$alwaysB)),
+			sum=ifelse(ispc1, NA, sum(v, na.rm=TRUE)),
 			min=min(v, na.rm=TRUE),
 			max=max(v, na.rm=TRUE),
 			mean=mean(v, na.rm=TRUE),
@@ -44,10 +53,16 @@ statsrow <- function(ab, var){
 	}
 }
 
-# cap a count based on tukey's fences
-capcnt <- function(x, k=5){
-	ubound <- quantile(x, 0.75) + k * IQR(x)
-	ifelse(x > ubound, ubound, x)
+# set var-related columns to log10 scale
+tolog10 <- function(tab, cell, var, cols){
+	for(i in cols){
+		new <- paste(cell, var, "log10", i, sep=".")
+		old <- paste(cell, var, i, sep=".")
+		tab <- tab %>%
+			mutate(!!new:=log10(!!sym(old)+1)) %>%
+				select(-!!sym(old))
+	}
+	tab
 }
 
 # generate a clustered correlation matrix
@@ -61,7 +76,7 @@ cormat <- function(x){
 }
 
 # helper function for writing out counts split by one or more classes
-write.counts <- function(x, file){
+write.counts <- function(x, file, cell){
 	l <- colnames(x)
 	# split iteratively over more and more subclasses and export table
 	x <- sapply(seq_along(l), function(i){
@@ -80,150 +95,166 @@ write.counts <- function(x, file){
 			rename(count=Freq) %>%
 			# arrange as we specified
 			arrange(!!!syms(l)) %>%
-			write.tsv(paste0("tabs/", file, ".by", length(i), ".tsv"))
+			write.tsv(paste0("tabs/", cell, ".", file, ".by", length(i), ".tsv"))
 	})
 }
 
-# helper function to read a count table, filter data on unused chromosomes and
-# pull count column, to add to a table
-addcol <- function(chr, f){
-	read.table(f) %>%
-		filter(V1 %in% unique(chr)) %>%
-		pull(V4)
+# read a list of count tables, retain only element counts,
+# bind all as columns of a dataframe
+readtabs <- function(files, chr){
+	lapply(files, function(x){
+		read.table(x) %>%
+		filter(V1 %in% chr) %>%
+		select(!!gsub("\\.bed\\.gz$", "", gsub(".*/", "", x)):=V4)
+	}) %>%
+		bind_cols
 }
 
-# read initial binning table with eigenvector
-ab <- read.table("prep/ab.bed", header=TRUE)
-# list all count files (excluding those for individual repseqs), then add
-# column for each, shortening the column name
-for(i in list.files("cnt", pattern="*.gz", full.names=TRUE)){
-	s <- gsub("\\.bed\\.gz$", "", gsub("^cnt/", "", i))
+# generate tables for each cell type
+mktab <- function(df, cell, pc1, pc1nf){
+	# read initial binning table with eigenvector
+	ab <- read.table(paste0("prep/", cell, ".ab.bed"), header=TRUE, stringsAsFactors=FALSE)
+
+	# add cell counts and genomic elements
+	l <- list.files("cnt", pattern=cell, full.names=TRUE)
+	ab <- cbind(ab, readtabs(l, unique(ab$chr))) %>%
+		cbind(df %>% filter(chr %in% unique(ab$chr)) %>% select(-chr))
+
+	# special case: log10 scale for huvec groseq
+	if(cell == "huvec")
+		ab <- tolog10(ab, cell, "groseq", c("meanofmean", "meanofsum", "sumofsum"))
+	# special case: log10 scale for h3k9me3
+	ab <- tolog10(ab, cell, "h3k9me3", c("mean", "sum"))
+
+	# get list of parameter columns for stats
+	vars <- ab %>%
+		select(-chr, -start, -end, -AorBvec) %>%
+		colnames
+
+	# column indicating active promoters
+	act <- paste0(cell, ".chromhmm.any.active.promoters")
+
+	# subdivide A/B regions into classes by gene density and presence of
+	# transcriptional activity, for each eigenvector (full and without flanking
+	# regions)
 	ab <- ab %>%
-		mutate(!!s:=addcol(chr, i))
-}
+		mutate(class1=ifelse(!!sym(pc1) < 0, "B", "A"),
+			class2=ifelse(hg19.refseq >= 4, "highgenedensity", ifelse(hg19.refseq > 0, "normalgenedensity", "nogene")),
+			class2=factor(class2, levels=c("highgenedensity", "normalgenedensity", "nogene")),
+			class3=ifelse(!!sym(act) > 0, "hasactive", "noactive"),
+			class4=ifelse(!!sym(pc1nf) < 0, "B", "A"),
+			class=paste(class1, class2, AorBvec, class3, sep="_"),
+			classF=paste(class4, class2, AorBvec, class3, sep="_"))
+	# export tables of counts split by each class
+	ab %>%
+		select(type=class1, genedensity=class2, pc1=AorBvec, active=class3) %>%
+		write.counts("bincountsbyclass", cell)
+	ab %>%
+		select(type=class4, genedensity=class2, pc1=AorBvec, active=class3) %>%
+		write.counts("bincountsbyclass.noflank", cell)
+	# export table of bin classification
+	ab %>%
+		select(chr, start, end, !!sym(pc1), !!sym(pc1nf), class, classF) %>%
+		write.gzip(paste0("tabs/", cell, ".classbybin.tsv.gz"), TRUE)
 
-# special case: log10 scale for groseq and h3k9me3
-ab <- ab %>%
-	mutate(huvec.groseq.log10.meanofmean=log10(huvec.groseq.meanofmean+1),
-		huvec.groseq.log10.meanofsum=log10(huvec.groseq.meanofsum+1),
-		huvec.groseq.log10.sumofsum=log10(huvec.groseq.sumofsum+1)) %>%
-	select(-huvec.groseq.meanofmean, -huvec.groseq.meanofsum, -huvec.groseq.sumofsum)
-ab <- ab %>%
-	mutate(huvec.h3k9me3.log10.mean=log10(huvec.h3k9me3.mean+1),
-		huvec.h3k9me3.log10.sum=log10(huvec.h3k9me3.sum+1)) %>%
-	select(-huvec.h3k9me3.mean, -huvec.h3k9me3.sum)
+	# export count table with classes
+	ab %>%
+		# remove unused columns, then reorder remaining
+		select(-matches("class[1-4]")) %>%
+		select(chr, start, end, !!sym(pc1), class, !!sym(pc1nf), classF, everything()) %>%
+		write.gzip(paste0("tabs/", cell, ".countsbybin.tsv.gz"), TRUE)
 
-# write out non-individual repseq count table
-write.gzip(ab, "tabs/counts.tsv.gz", TRUE)
+	# create binary count beds for each class generated above (for diagnostics)
+	for(i in unique(ab$class)){
+		ab %>%
+			mutate(v=ifelse(class==i, 1, 0)) %>%
+			select(chr, start, end, v) %>%
+			write.gzip(paste0("cnt/", i, ".bed.gz"))
+		ab %>%
+			mutate(v=ifelse(classF==i, 1, 0)) %>%
+			select(chr, start, end, v) %>%
+			write.gzip(paste0("cnt/", i, ".noflank.bed.gz"))
+	}
 
-# epigenomic and genomic parameter lists for modeling
-l <- lapply(c("lm.eparm.tsv", "lm.gparm.tsv"), read.parms)
-# select modeling parameters and apply transformations
-abm <- ab %>%
-	select(HUVEC, HUVECnoflank, !!!syms(unique(unlist(l)))) %>%
-	# normalize parameter columns range to [0;1] for easier interpretation
-	# (doesn't affect prediction efficiency)
-	mutate_if(1:ncol(.) > 2, ~. / max(., na.rm=TRUE)) %>%
-	rename(eigenvector=HUVEC, eigenvectornf=HUVECnoflank)
-# write out parameter values for neural network modeling
-abm %>%
-	select(-eigenvectornf) %>%
-	write.csv(file="tabs/nnparms.csv", quote=FALSE, row.names=FALSE)
-# write out parameter values for linear modeling
-abm %>%
-	write.gzip("tabs/lmparms.tsv.gz", TRUE)
-# generate a correlation matrix for plotting
-abm %>%
-	select(-eigenvectornf) %>%
-	cormat %>%
-	write.tsv("tabs/lmparmscor.tsv", col.names=TRUE, row.names=TRUE)
-
-# subdivide A/B regions into classes by gene density and presence of
-# transcriptional activity, for each eigenvector (full and without flanking
-# regions)
-ab <- ab %>%
-	mutate(class1=ifelse(HUVEC < 0, "B", "A"),
-		class2=ifelse(hg19.refseq >= 4, "highgenedensity", ifelse(hg19.refseq > 0, "normalgenedensity", "nogene")),
-		class2=factor(class2, levels=c("highgenedensity", "normalgenedensity", "nogene")),
-		class3=ifelse(huvec.chromhmm.any.active.promoters > 0, "hasactive", "noactive"),
-		class4=ifelse(HUVECnoflank < 0, "B", "A"),
-		class=paste(class1, class2, AorBvec, class3, sep="_"),
-		classF=paste(class4, class2, AorBvec, class3, sep="_"))
-# export tables of counts split by each class
-ab %>%
-	select(type=class1, genedensity=class2, pc1=AorBvec, active=class3) %>%
-	write.counts("bins")
-ab %>%
-	select(type=class4, genedensity=class2, pc1=AorBvec, active=class3) %>%
-	write.counts("bins.noflank")
-# export table of bin classification
-ab %>%
-	select(-class1, -class2, -class3, -class4) %>%
-	select(chr, start, end, HUVEC, HUVECnoflank, class, classF) %>%
-	write.gzip("tabs/class.tsv.gz", TRUE)
-
-# read in columns for individual repseqs as before
-for(i in list.files("cnt/repseq", pattern="*.gz", full.names=TRUE)){
-	s <- gsub("\\.bed\\.gz$", "", gsub("^cnt/repseq/", "", i))
+	# generate distribution statistics tables
+	# add filtering variables for enrichment calculations
 	ab <- ab %>%
-		mutate(!!s:=addcol(chr, i))
-}
-# export table with counts for all parameters
-ab %>%
-	# remove unused columns, then reorder remaining
-	select(-AorBvec, -IMR90, -matches("class[1-4]")) %>%
-	select(chr, start, end, HUVEC, HUVECnoflank, class, classF, everything()) %>%
-	write.gzip("tabs/aball.tsv.gz", TRUE)
-
-# get list of parameter columns for stats
-vars <- ab %>%
-	select(-chr, -start, -end, -starts_with("class"), -AorBvec) %>%
-	colnames
-
-# add filtering variables for enrichment calculations
-ab <- ab %>%
-	mutate(anyA=class1=="A", anyB=class1=="B",
-		alwaysA=AorBvec=="AlwaysA", alwaysB=AorBvec=="AlwaysB")
-
-# list of subclass tables to generate with filter condition
-l <- list(
-	list(f="", q=quote(rep(TRUE))),
-	list(f=".alwaysA.hasactive", q=quote(ab$AorBvec=="AlwaysA" & ab$huvec.chromhmm.any.active.promoters > 0)),
-	list(f=".alwaysA.noactive", q=quote(ab$AorBvec=="AlwaysA" & ab$huvec.chromhmm.any.active.promoters == 0)),
-	list(f=".alwaysB.hasactive", q=quote(ab$AorBvec=="AlwaysB" & ab$huvec.chromhmm.any.active.promoters > 0)),
-	list(f=".alwaysB.noactive", q=quote(ab$AorBvec=="AlwaysB" & ab$huvec.chromhmm.any.active.promoters == 0)),
-	list(f=".aorb.hasactive", q=quote(ab$AorBvec=="AorB" & ab$huvec.chromhmm.any.active.promoters > 0)),
-	list(f=".aorb.noactive", q=quote(ab$AorBvec=="AorB" & ab$huvec.chromhmm.any.active.promoters == 0)),
-	list(f=".alwaysA.highgene", q=quote(ab$AorBvec=="AlwaysA" & ab$class2 == "highgenedensity")),
-	list(f=".alwaysA.reggene", q=quote(ab$AorBvec=="AlwaysA" & ab$class2 == "normalgenedensity")),
-	list(f=".alwaysA.lowgene", q=quote(ab$AorBvec=="AlwaysA" & ab$class2 == "nogene")),
-	list(f=".alwaysB.highgene", q=quote(ab$AorBvec=="AlwaysB" & ab$class2 == "highgenedensity")),
-	list(f=".alwaysB.reggene", q=quote(ab$AorBvec=="AlwaysB" & ab$class2 == "normalgenedensity")),
-	list(f=".alwaysB.lowgene", q=quote(ab$AorBvec=="AlwaysB" & ab$class2 == "nogene")),
-	list(f=".aorba.highgene", q=quote(ab$AorBvec=="AorB" & ab$class1 == "A" & ab$class2 == "highgenedensity")),
-	list(f=".aorba.reggene", q=quote(ab$AorBvec=="AorB" & ab$class1 == "A" & ab$class2 == "normalgenedensity")),
-	list(f=".aorba.lowgene", q=quote(ab$AorBvec=="AorB" & ab$class1 == "A" & ab$class2 == "nogene")),
-	list(f=".aorbb.highgene", q=quote(ab$AorBvec=="AorB" & ab$class1 == "B" & ab$class2 == "highgenedensity")),
-	list(f=".aorbb.reggene", q=quote(ab$AorBvec=="AorB" & ab$class1 == "B" & ab$class2 == "normalgenedensity")),
-	list(f=".aorbb.lowgene", q=quote(ab$AorBvec=="AorB" & ab$class1 == "B" & ab$class2 == "nogene"))
-)
-l <- c(l, lapply(unique(ab$class), function(x) list(f=paste0(".", x), q=bquote(ab$class == .(x)))))
-# generate the subclass tables
-l <- lapply(l, function(x){
-	d <- filter(ab, eval(x$q))
-	lapply(vars, function(n) statsrow(d, n)) %>%
+		mutate(anyA=class1=="A", anyB=class1=="B",
+			alwaysA=AorBvec=="AlwaysA", alwaysB=AorBvec=="AlwaysB")
+	# export global stats table without classes
+	lapply(vars, function(n) statsrow(ab, n, c(pc1, pc1nf))) %>%
 		bind_rows %>%
-		write.gzip(paste0("tabs/parms", x$f, ".tsv.gz"), TRUE)
-})
+		write.gzip(paste("tabs/stats.global", cell, "tsv.gz", sep="."), TRUE)
+	# stats tables for each individual class
+	# list of subclass tables to generate with filter condition: these are selected classes constructed for later
+	l <- list(
+		list(f="alwaysA.hasactive", q=quote(AorBvec=="AlwaysA" & !!sym(act) > 0)),
+		list(f="alwaysA.noactive", q=quote(AorBvec=="AlwaysA" & !!sym(act) == 0)),
+		list(f="alwaysB.hasactive", q=quote(AorBvec=="AlwaysB" & !!sym(act) > 0)),
+		list(f="alwaysB.noactive", q=quote(AorBvec=="AlwaysB" & !!sym(act) == 0)),
+		list(f="aorb.hasactive", q=quote(AorBvec=="AorB" & !!sym(act) > 0)),
+		list(f="aorb.noactive", q=quote(AorBvec=="AorB" & !!sym(act) == 0)),
+		list(f="alwaysA.highgene", q=quote(AorBvec=="AlwaysA" & class2 == "highgenedensity")),
+		list(f="alwaysA.reggene", q=quote(AorBvec=="AlwaysA" & class2 == "normalgenedensity")),
+		list(f="alwaysA.lowgene", q=quote(AorBvec=="AlwaysA" & class2 == "nogene")),
+		list(f="alwaysB.highgene", q=quote(AorBvec=="AlwaysB" & class2 == "highgenedensity")),
+		list(f="alwaysB.reggene", q=quote(AorBvec=="AlwaysB" & class2 == "normalgenedensity")),
+		list(f="alwaysB.lowgene", q=quote(AorBvec=="AlwaysB" & class2 == "nogene")),
+		list(f="aorba.highgene", q=quote(AorBvec=="AorB" & class1 == "A" & class2 == "highgenedensity")),
+		list(f="aorba.reggene", q=quote(AorBvec=="AorB" & class1 == "A" & class2 == "normalgenedensity")),
+		list(f="aorba.lowgene", q=quote(AorBvec=="AorB" & class1 == "A" & class2 == "nogene")),
+		list(f="aorbb.highgene", q=quote(AorBvec=="AorB" & class1 == "B" & class2 == "highgenedensity")),
+		list(f="aorbb.reggene", q=quote(AorBvec=="AorB" & class1 == "B" & class2 == "normalgenedensity")),
+		list(f="aorbb.lowgene", q=quote(AorBvec=="AorB" & class1 == "B" & class2 == "nogene"))
+	)
+	# add all the other class combinations as well
+	l <- c(l, lapply(unique(ab$class), function(x) list(f=paste0("old.", x), q=bquote(ab$class == .(x)))))
+	# generate the subclass tables
+	l <- lapply(l, function(x){
+		d <- filter(ab, eval(x$q))
+		lapply(vars, function(n) statsrow(d, n, c(pc1, pc1nf))) %>%
+			bind_rows %>%
+			write.gzip(paste(paste0("tabs/stats/", cell), "statsbyclass", x$f, "tsv.gz", sep="."), TRUE)
+	})
 
-# create binary count beds for each class generated above (for diagnostics)
-for(i in unique(ab$class)){
-	ab %>%
-		mutate(v=ifelse(class==i, 1, 0)) %>%
-		select(chr, start, end, v) %>%
-		write.gzip(paste0("cnt/", i, ".bed.gz"))
-	ab %>%
-		mutate(v=ifelse(classF==i, 1, 0)) %>%
-		select(chr, start, end, v) %>%
-		write.gzip(paste0("cnt/", i, ".noflank.bed.gz"))
+	# export adjusted counts for linear modeling
+	# epigenomic and genomic parameter lists for modeling
+	l <- lapply(paste(c(cell, "hg19"), "lmparm.tsv", sep="."), read.parms) %>%
+		unlist %>%
+		unique
+	# select modeling parameters and apply transformations
+	abm <- ab %>%
+		select(!!sym(pc1), !!sym(pc1nf), !!!syms(l)) %>%
+		# normalize parameter columns range to [0;1] for easier interpretation
+		# (doesn't affect prediction efficiency)
+		mutate_if(1:ncol(.) > 2, ~. / max(., na.rm=TRUE)) %>%
+		rename(eigenvector=!!sym(pc1), eigenvectornf=!!sym(pc1nf))
+	# write out parameter values for linear modeling
+	abm %>%
+		write.gzip(paste0("tabs/", cell, ".lm.tsv.gz"), TRUE)
+	# generate a correlation matrix for plotting
+	abm %>%
+		select(-eigenvectornf) %>%
+		cormat %>%
+		write.tsv(paste0("tabs/", cell, ".lmcor.tsv"), col.names=TRUE, row.names=TRUE)
+
+	# write out parameter values for neural network modeling
+	abm %>%
+		select(-eigenvectornf) %>%
+		write.csv(file=paste0("tabs/", cell, ".nnet.csv"), quote=FALSE, row.names=FALSE)
 }
+
+dir.create("tabs/stats", showWarnings=FALSE)
+
+# get chromosome names for each bin to filter later
+chr <- read.table("prep/hg19w.bed", stringsAsFactors=FALSE) %>%
+	select(chr=V1)
+# read in genomic elements to reuse in each cell type tables
+l <- c(
+	list.files("cnt", pattern="hg19.*gz", full.names=TRUE),
+	list.files("cnt/repseq", full.names=TRUE)
+)
+df <- cbind(chr, readtabs(l, unique(chr$chr)))
+mktab(df, "huvec", "HUVEC", "HUVECnoflank")
+mktab(df, "gm12878", "GM12878", "GM12878noflank")
+mktab(df, "bcell", "GM12878", "GM12878noflank")

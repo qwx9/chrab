@@ -52,6 +52,7 @@ l <- lapply(f, function(x){
 	# these combinations
 	l <- lapply(c(paste0(cell, ".lmparm.tsv"), "hg19.lmparm.tsv"), read.parms)
 	l <- comb.parms(l)
+	l$mall <- unique(unlist(l))
 	f <- paste0("lm/", cell, "/", names(l), "/")
 	dir.create(paste0("lm/", cell), showWarnings=FALSE)
 

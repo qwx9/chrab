@@ -3,9 +3,9 @@ hg19.repseq.prob.te
 hg19.repseq.prob.ltr	hg19.repseq.prob.l1long	hg19.repseq.psil.prob
 hg19.repseq.prob.ltr
 hg19.repseq.proa	hg19.repseq.prob
-hg19.repseq.proa.te	hg19.repseq.prob.te
-hg19.repseq.proa.te	hg19.repseq.prob.ltr	hg19.repseq.prob.l1long	hg19.repseq.psil.prob
-hg19.repseq.proa.te	hg19.repseq.prob.ltr
+hg19.repseq.proa.alu	hg19.repseq.prob.te
+hg19.repseq.proa.alu	hg19.repseq.prob.ltr	hg19.repseq.prob.l1long	hg19.repseq.psil.prob
+hg19.repseq.proa.alu	hg19.repseq.prob.ltr
 hg19.refseq
 hg19.gc
 hg19.repseq.proa
@@ -16,5 +16,7 @@ hg19.repseq.proa	hg19.repseq.prob	hg19.gc
 hg19.repseq.proa.nonte	hg19.repseq.prob.sr.lc.sat
 hg19.repseq.proa.nonte	hg19.repseq.prob
 hg19.repseq.proa	hg19.repseq.prob.sr.lc.sat
-hg19.repseq.proa.te	hg19.repseq.proa.nonte	hg19.repseq.prob.te	hg19.repseq.prob.sr.lc.sat
+hg19.repseq.proa.alu	hg19.repseq.proa.nonte	hg19.repseq.prob.te	hg19.repseq.prob.sr.lc.sat
 hg19.repseq.ebv.prob	hg19.repseq.ebv.nonprob
+hg19.repseq.proa.alu	hg19.repseq.proa.nonte	hg19.repseq.prob.te	hg19.repseq.prob.sr.lc.sat	hg19.refseq
+hg19.repseq.proa.alu	hg19.repseq.proa.nonte	hg19.refseq

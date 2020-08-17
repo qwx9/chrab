@@ -2,10 +2,10 @@ huvec.chromhmm.merged.strong.promoters	huvec.chromhmm.merged.weak.promoters	huve
 huvec.chromhmm.merged.strong.promoters	huvec.chromhmm.merged.weak.promoters	huvec.chromhmm.any.strong.enhancers	huvec.chromhmm.3.poised_promoter	huvec.silencer
 huvec.chromhmm.merged.strong.promoters	huvec.chromhmm.merged.weak.promoters	huvec.chromhmm.any.strong.enhancers	huvec.dhs.rep1
 huvec.chromhmm.merged.strong.promoters	huvec.chromhmm.merged.weak.promoters	huvec.chromhmm.any.strong.enhancers	huvec.chromhmm.3.poised_promoter	huvec.silencer	huvec.dhs.rep1
-huvec.h3k27ac	huvec.h3k4me3	huvec.dhs.rep1	huvec.silencer	huvec.groseq.log10.sumofsum
-huvec.h3k27ac	huvec.h3k4me3	huvec.dhs.rep1	huvec.silencer	huvec.groseq.log10.sumofsum	huvec.chromhmm.3.poised_promoter
+huvec.silencer	huvec.h3k4me3	huvec.h3k27ac	huvec.dhs.rep1
+huvec.chromhmm.3.poised_promoter	huvec.silencer	huvec.h3k4me3	huvec.h3k27ac	huvec.dhs.rep1
 huvec.dhs.rep1
-huvec.h3k27me3
+huvec.groseq.log10.sumofsum
 huvec.h3k9me3.log10.sum
 huvec.dhs.rep1	huvec.h3k9me3.log10.sum
-huvec.dhs.rep1	huvec.h3k9me3.log10.sum	huvec.h3k27ac
+huvec.groseq.log10.sumofsum	huvec.h3k9me3.log10.sum

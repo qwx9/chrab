@@ -5,7 +5,5 @@ gm12878.chromhmm.merged.strong.promoters	gm12878.chromhmm.merged.weak.promoters	
 gm12878.silencer	gm12878.h3k4me3	gm12878.h3k27ac	gm12878.dhs.rep1
 gm12878.chromhmm.3.poised_promoter	gm12878.silencer	gm12878.h3k4me3	gm12878.h3k27ac	gm12878.dhs.rep1
 gm12878.dhs.rep1
-gm12878.groseq.log10.sumofsum
 gm12878.h3k9me3.log10.sum
 gm12878.dhs.rep1	gm12878.h3k9me3.log10.sum
-gm12878.groseq.log10.sumofsum	gm12878.h3k9me3.log10.sum

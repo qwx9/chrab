@@ -5,7 +5,7 @@ library(dplyr)
 source("lib.R")
 
 enrichment <- function(v, class){
-	vratio <- sum(v[class], na.rm=TRUE) / sum(v, na.rm=TRUE) * 100
+	vratio <- sum(v[class], na.rm=TRUE) / sum(v, na.rm=TRUE)
 	binratio <- sum(class, na.rm=TRUE) / length(na.omit(class))
 	vratio / binratio
 }

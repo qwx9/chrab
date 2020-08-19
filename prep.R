@@ -251,7 +251,7 @@ mkgc5 <- function(f){
 # hg19 chromosome size from ucsc ftp server: filter uninteresting chromosomes,
 # and sort by name like sort -V
 mkchr <- function(f){
-	read.table("hg19/hg19.txt", header=FALSE, stringsAsFactors=FALSE) %>%
+	read.table("hg19/hg19.txt", header=FALSE) %>%
 		filter(grepl("chr[1-9XY][0-9]?$", V1)) %>%
 		mutate(v=ifelse(nchar(V1) == 4 & substr(V1, 4, 4) %in% 0:9, paste0("chr0", substr(V1, 4, 4)), V1)) %>%
 		arrange(v) %>%

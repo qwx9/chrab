@@ -29,8 +29,7 @@ statsrow <- function(ab, var, pc1list){
 			median=NA,
 			q1=NA,
 			q3=NA,
-			na=length(v),
-			stringsAsFactors=FALSE
+			na=length(v)
 		)
 	}else{
 		# don't calculate enrichment and things that don't make sense for eigenvectors
@@ -47,8 +46,7 @@ statsrow <- function(ab, var, pc1list){
 			median=median(v, na.rm=TRUE),
 			q1=quantile(v, 0.25, na.rm=TRUE),
 			q3=quantile(v, 0.75, na.rm=TRUE),
-			na=sum(is.na(v)),
-			stringsAsFactors=FALSE
+			na=sum(is.na(v))
 		)
 	}
 }
@@ -112,7 +110,7 @@ readtabs <- function(files, chr){
 
 mkcountsonly <- function(df, cell, abref){
 	# read binning table from another cell line to select chr
-	ab <- read.table(paste0("prep/", cell, ".ab.bed"), header=TRUE, stringsAsFactors=FALSE)
+	ab <- read.table(paste0("prep/", cell, ".ab.bed"), header=TRUE)
 	# add cell counts and genomic elements
 	l <- list.files("cnt", pattern=cell, full.names=TRUE)
 	ab <- cbind(ab, readtabs(l, unique(ab$chr))) %>%
@@ -137,7 +135,7 @@ mkcountsonly <- function(df, cell, abref){
 # generate tables for each cell type
 mktab <- function(df, cell, pc1, pc1nf){
 	# read initial binning table with eigenvector
-	ab <- read.table(paste0("prep/", cell, ".ab.bed"), header=TRUE, stringsAsFactors=FALSE)
+	ab <- read.table(paste0("prep/", cell, ".ab.bed"), header=TRUE)
 
 	# add cell counts and genomic elements
 	l <- list.files("cnt", pattern=cell, full.names=TRUE)
@@ -271,7 +269,7 @@ mktab <- function(df, cell, pc1, pc1nf){
 dir.create("tabs/stats", showWarnings=FALSE)
 
 # get chromosome names for each bin to filter later
-chr <- read.table("prep/hg19w.bed", stringsAsFactors=FALSE) %>%
+chr <- read.table("prep/hg19w.bed") %>%
 	select(chr=V1)
 # read in genomic elements to reuse in each cell type tables
 l <- c(

@@ -110,6 +110,30 @@ readtabs <- function(files, chr){
 		bind_cols
 }
 
+mkcountsonly <- function(df, cell, abref){
+	# read binning table from another cell line to select chr
+	ab <- read.table(paste0("prep/", cell, ".ab.bed"), header=TRUE, stringsAsFactors=FALSE)
+	# add cell counts and genomic elements
+	l <- list.files("cnt", pattern=cell, full.names=TRUE)
+	ab <- cbind(ab, readtabs(l, unique(ab$chr))) %>%
+		cbind(df %>% filter(chr %in% unique(ab$chr)) %>% select(-chr)) %>%
+		select(-AorBvec, -5:6) %>%
+		# special case: log10 scale for h3k9me3
+		tolog10(cell, "h3k9me3", c("mean", "sum"))
+	# export count table with classes
+	ab %>%
+		write.gzip(paste0("tabs/", cell, ".countsbybin.tsv.gz"), TRUE)
+
+	# get list of parameter columns for stats
+	vars <- ab %>%
+		select(-chr, -start, -end) %>%
+		colnames
+	# export global stats table without classes
+	lapply(vars, function(n) statsrow(ab, n, n)) %>%
+		bind_rows %>%
+		write.gzip(paste("tabs/stats.global", cell, "tsv.gz", sep="."), TRUE)
+}
+
 # generate tables for each cell type
 mktab <- function(df, cell, pc1, pc1nf){
 	# read initial binning table with eigenvector
@@ -257,3 +281,4 @@ l <- c(
 df <- cbind(chr, readtabs(l, unique(chr$chr)))
 mktab(df, "huvec", "HUVEC", "HUVECnoflank")
 mktab(df, "gm12878", "GM12878", "GM12878noflank")
+mkcountsonly(df, "bcell")

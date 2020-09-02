@@ -17,12 +17,12 @@ pullcnt <- function(ab, x){
 }
 
 # get bin positions for files that don't contain them
-ab <- read.table("prep/ab.bed", header=TRUE) %>%
+ab <- read.table("prep/huvec.ab.bed", header=TRUE) %>%
 	select(chr, start, end)
 
 # read neural network results if they exist
 if(file.access("gf/results.csv", 4) == 0){
-	x <- read.table("gf/results.csv", sep="\t", header=TRUE, stringsAsFactors=FALSE)
+	x <- read.table("gf/results.csv", sep="\t", header=TRUE)
 	ab %>%
 		mutate(pred=x$prediction_nn) %>%
 		write.gzbedg("igv/nnpred.bedgraph.gz", "nnpred")
@@ -34,15 +34,13 @@ if(file.access("gf/results.csv", 4) == 0){
 l <- list.files("cnt", pattern="\\.gz$", full.names=TRUE, recursive=TRUE)
 l1 <- data.frame(l=l,
 	f=sub("\\.bed", ".bedgraph", sub("^cnt/", "igv/", l)),
-	n=gsub("^(cnt/|cnt/repseq/)|\\.bed\\.gz", "", l),
-	stringsAsFactors=FALSE
+	n=gsub("^(cnt/|cnt/repseq/)|\\.bed\\.gz", "", l)
 )
 # add model files
 l <- list.files("lm", pattern="pred.tsv.gz", full.names=TRUE, recursive=TRUE)
 l2 <- data.frame(l=l,
 	f=sub("\\.tsv", ".bedgraph", l),
-	n=gsub("^lm/|/pred.tsv.gz$", "", l),
-	stringsAsFactors=FALSE
+	n=gsub("^lm/|/pred.tsv.gz$", "", l)
 )
 
 # don't overwrite existing files

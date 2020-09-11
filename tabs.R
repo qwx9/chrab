@@ -124,7 +124,7 @@ mkcountsonly <- function(df, cell, abref){
 
 	# get list of parameter columns for stats
 	vars <- ab %>%
-		select(-chr, -start, -end) %>%
+		select(-chr, -start, -end, -AorBvec) %>%
 		colnames
 	# export global stats table without classes
 	lapply(vars, function(n) statsrow(ab, n, n)) %>%

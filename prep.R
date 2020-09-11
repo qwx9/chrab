@@ -420,12 +420,9 @@ mkrepseq <- function(){
 	repmask <- read.table("hg19/hg19.fa.out.gz", skip=2) %>%
 		select(chr=V5, start=V6, end=V7, id=V10)
 	repcor <- read.table("prep/hg19.repseq.tsv", header=TRUE)
-	psil <- read_xlsx("gf/Liste.ProtoSil.Forts-Etudiants-14nov2019.xlsx", col_types="text",
+	psilprob <- read_xlsx("gf/List.pour.KONST-6sept2020.xlsx", col_types="text",
 		.name_repair=~gsub(" ", "_", .x)) %>%
-		select(4, 5) %>%
-		mutate(prob=liste_FINALE, subb=liste) %>%
-		filter(!row_number() %in% c(1,2))
-	psilprob <- data.frame(Name=psil$prob)
+		select(Name=1)
 	# yes, this is not really a table and column names are all screwed up
 	suppressWarnings(
 		ebv <- read_xlsx("gf/listes.EBV(LTR)-transmis.26dec2019.xlsx", col_types="text") %>%

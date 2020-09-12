@@ -28,7 +28,7 @@ ggfit <- function(d, var, title, method="auto"){
 }
 
 # generate correlation heatmap of params in provided data.frame
-ggcor <- function(cm){
+ggcor <- function(cm, pc1){
 	# remove lower matrix triangle since it's redundant
 	cm[lower.tri(cm)] <- NA
 	# convert matrix to data.frame, then use gather to make a tidy
@@ -43,9 +43,11 @@ ggcor <- function(cm){
 			scale_fill_gradient2(low="blue", high="red", mid="white",
 				midpoint=0, limit=c(-1,1), space="Lab",
 				name="Pearson\nCorrelation") +
-			theme(axis.text.x=element_text(angle=45, vjust=1, size=12, hjust=1)) +
-				coord_fixed() +
-				geom_text(color="black", size=2)
+			theme(axis.text.x=element_text(angle=45, vjust=1, size=12, hjust=1),
+				axis.title=element_blank()) +
+			coord_fixed() +
+			geom_text(color="black", size=2) +
+			ggtitle(paste(pc1, "lm parameters"))
 }
 
 # violin plots: takes a data.frame with class and parameter; parameter name;
@@ -83,23 +85,22 @@ ggridge <- function(ab, var, class){
 }
 
 # scatter plots: takes a data.frame with eigenvector and parameter; parameter
-# name; eigenvector variable to use
-ggscatter <- function(ab, var, pc1){
-	# total count across everything
-	n <- sum(ab[,var])
-	# enrichment factor: proportion in anyA, alwaysA, anyB, alwaysB
-	Ea <- round(sum(ab[ab$class2=="A",var]) / n * 100, 1)
-	EA <- round(sum(ab[ab$class3=="A",var], na.rm=TRUE) / n * 100, 1)
-	Eb <- round(sum(ab[ab$class2=="B",var]) / n * 100, 1)
-	EB <- round(sum(ab[ab$class3=="B",var], na.rm=TRUE) / n * 100, 1)
+# name; eigenvector variable to use; statistics table
+ggscatter <- function(ab, var, pc1, stt){
+	# get parm statistics
+	stt <- filter(stt, parm == var)
 	# construct annotation string
-	s <- paste0("A Enrichment: ", Ea, "%, AlwaysA: ", EA, "%\n",
-		"B Enrichment: ", Eb, "%, AlwaysB: ", EB, "%\n")
+	s <- paste0("A Enrichment: ", round(stt$EanyA, 3), ", AlwaysA: ", round(stt$EalwaysA, 3), "\n",
+		"B Enrichment: ", round(stt$EanyB, 3), ", AlwaysB: ", round(stt$EalwaysB, 3), "\n")
+
 	# initial plot
 	g <- ggplot(ab, aes(!!sym(var), !!sym(pc1))) +
 		geom_hex(na.rm=TRUE)
+
 	# extract count maximum for any pc1/frequency combination
 	cnt <- max(layer_data(g, 1)[,"count"])
+	lab <- c(max(ab[,var], na.rm=TRUE), max(ab[,pc1], na.rm=TRUE) + quantile(ab[,pc1], 0.75, na.rm=TRUE))
+
 	# if there are no counts (e.g. they were filtered out), cnt is -Inf,
 	# just paste an empty plot
 	# otherwise, add a custom gradient with a special color for very low
@@ -109,31 +110,66 @@ ggscatter <- function(ab, var, pc1){
 			scale_fill_gradientn(colors=c("#cccccc", "blue", "red", "yellow"),
 				values=c(0, 1/50, 1/2, 1),
 				breaks=unique(round(seq(0, cnt, length.out=12), 0))) +
-			guides(fill=guide_colorbar(barheight=30))
+			guides(fill=guide_colorbar(barheight=unit(0.6, "npc"))) +
+			# put enrichment summary on top of scatter plot
+			annotate("text", label=s, x=lab[1], y=lab[2], vjust="inward", hjust="inward")
 	}
-	# put enrichment summary on top of scatter plot
-	grid.arrange(g, top=textGrob(s))
+	g
 }
 
-# stat_density_2d uses MASS::kde2d which in turn uses MASS:bandwidth.nrd,
-# which subtracts 3rd quantile from 1st for a bandwidth estimate.
-# this obviously fails if we have too many 0 counts.
-ggdensity2d <- function(ab, var, pc1){
-	if(quantile(ab[,var], 0.5) == 0)
+# regular scatterplot (but not hex) by class
+ggscatterbyclass <- function(ab, var, pc1){
+	# initial plot with all classes
+	g <- ggplot(ab, aes(!!sym(var), !!sym(pc1))) +
+		geom_hex(na.rm=TRUE)
+
+	# extract count maximum for any pc1/frequency combination, set breaks
+	cnt <- max(layer_data(g, 1)[,"count"])
+
+	if(is.infinite(cnt))
 		return(NULL)
+	g +
+		facet_wrap(vars(classc)) +
+		scale_fill_gradientn(colors=c("#cccccc", "blue", "red", "yellow"),
+			values=c(0, 1/50, 1/2, 1),
+			breaks=unique(round(seq(0, cnt, length.out=12), 0))) +
+		guides(fill=guide_colorbar(barheight=30))
+}
+
+ggdensity2d <- function(ab, var, pc1){
+	# stat_density_2d uses MASS::kde2d which in turn uses MASS::bandwidth.nrd,
+	# which subtracts 3rd quantile from 1st for a bandwidth estimate.
+	# this obviously fails if we have too many 0 counts.
+	z <- sapply(seq_along(levels(ab$classc)), function(i){
+		if(quantile(ab[ab$classc==levels(ab$classc)[i],var], 0.5) == 0
+		|| MASS::bandwidth.nrd(ab[ab$classc == levels(ab$classc)[i],var]) == 0)
+			levels(ab$classc)[i]
+		else
+			NULL
+	}) %>%
+		unlist
+	ab <- ab[! ab$classc %in% z,]
+	if(nrow(ab) == 0)
+		return(NULL)
+	ab$classc <- droplevels(ab$classc)
 	ggplot(ab, aes(!!sym(var), !!sym(pc1), color=classc, fill=classc)) +
 		stat_density_2d(geom="polygon", alpha=0.05, na.rm=TRUE) +
 		scale_color_brewer(name="subclasses", palette="Paired", aesthetics=c("fill", "color"))
 }
 
 ggdensity2dxor <- function(ab, var, pc1, name){
-	if(quantile(ab[,var], 0.5) == 0)
+	if(quantile(ab[,var], 0.5) == 0
+	|| quantile(ab[ab$classc == name,var], 0.5) == 0
+	|| MASS::bandwidth.nrd(ab[ab$classc == name,var]) == 0)
 		return(NULL)
-	ab %>%
-		mutate(classc=ifelse(classc==name, name, "others")) %>%
-		ggplot(aes(!!sym(var), !!sym(pc1), color=classc, fill=classc)) +
-			stat_density_2d(geom="polygon", alpha=0.05, na.rm=TRUE) +
-			scale_color_manual(name="subclasses", values=c("red", "grey"), aesthetics=c("fill", "color"))
+	rx <- range(ab[,var])
+	ry <- range(ab[,pc1])
+	ggplot(mapping=aes(!!sym(var), !!sym(pc1))) +
+		stat_density_2d(data=ab, geom="polygon", alpha=0.05, color="grey", fill="grey", na.rm=TRUE) +
+		stat_density_2d(data=ab[ab$classc==name,], aes(group=name), geom="polygon", alpha=0.05, color="red", fill="red", na.rm=TRUE) +
+		ggtitle(paste(name, "Density")) +
+		xlim(rx) +
+		ylim(ry)
 }
 
 # split bins into classes for exploded scatterplots as specified
@@ -165,9 +201,150 @@ scattersplit <- function(x){
 		levels=cl, ordered=TRUE)
 }
 
-# read table of all counts, removing useless columns
-ab <- read.table("tabs/aball.tsv.gz", header=TRUE) %>%
-	select(-chr, -start, -end)
+mkplots <- function(th, cell, pc1, pc1nf){
+	# read table of all counts, removing useless columns
+	ab <- read.table(paste0("tabs/", cell, ".countsbybin.tsv.gz"), header=TRUE) %>%
+		select(-chr, -start, -end)
+
+	# generate correlation heatmap for all lm parameters
+	pref <- paste0("lm/", cell, "/")
+	if(file.access(paste0("plot/", cell, ".cor.pdf"), 4) != 0){
+		read.table(paste0("tabs/", cell, ".lmcor.tsv"), header=TRUE) %>%
+			ggcor(pc1) %>%
+			ggsave(filename=paste0(pref, "cor.pdf"), width=24, height=20)
+	}
+
+	# reorder classes for plots
+	l <- unique(ab$class)
+	l <- c(l[grep("^A_nogene", l)], l[grep("^A_high", l)], l[grep("^A_normal", l)],
+		l[grep("^B_normal", l)], l[grep("^B_nogene", l)], l[grep("^B_high", l)],
+		l[grep("^NA", l)])
+	ab$class <- factor(ab$class, levels=l, ordered=TRUE)
+	l <- unique(ab$classF)
+	l <- c(l[grep("^A_nogene", l)], l[grep("^A_high", l)], l[grep("^A_normal", l)],
+		l[grep("^B_normal", l)], l[grep("^B_nogene", l)], l[grep("^B_high", l)],
+		l[grep("^NA", l)])
+	ab$classF <- factor(ab$classF, levels=l, ordered=TRUE)
+
+	# list all parameter names, and split individual repseqs apart, since they will
+	# be in their own subdirectory; remove class and eigenvector columns
+	l <- colnames(ab)
+	l2 <- l[grep("repseq\\.only", l)]
+	l <- l[grep(paste0("^(AorBvec|NA_|[AB]_|class|hg19\\.repseq\\.only|", pc1, ")"), l, invert=TRUE)]
+	# generate filenames for all parameters
+	f <- c(paste0("plot/", l, ".pdf"), paste0("plot/repseq/", l2, ".pdf"))
+	l <- c(l, l2)
+
+	# only generate missing plots
+	i <- which(file.access(f, 4) != 0)
+	l <- l[i]
+	f <- f[i]
+
+	# generate two data.frames based on which eigenvector we use, then split into
+	# sub-data.frames for each parameter; one list will be for raw eigenvector, and
+	# one for eigenvector without flanking regions (as defined in tabs.R); we will
+	# want to generate plots for both for each parameter; foreach will then take
+	# both lists and manage distributing them to workers
+	# for both lists, remove values in NA_ classes (erroneous data), and generate
+	# anyA/anyB and alwaysA/alwaysB columns for scatterplots
+	abf <- ab %>%
+		filter(!grepl("^NA_", class)) %>%
+		mutate(class=droplevels(class),
+			classc=scattersplit(class))
+	abf <- lapply(l, function(x){
+		abf %>%
+			select(class, classc, !!sym(pc1), !!sym(x))
+	})
+	abnf <- ab %>%
+		filter(!grepl("^NA_", classF)) %>%
+		mutate(classF=droplevels(classF),
+			classc=scattersplit(classF))
+	abnf <- lapply(l, function(x){
+		abnf %>%
+			select(classF, classc, !!sym(pc1nf), !!sym(x))
+	})
+
+	# get descriptive statistics table
+	stt <- read.table(paste0("tabs/stats.global.", cell, ".tsv.gz"), header=TRUE)
+
+	# normal parameter plots; repseq counts are present in all cell tables,
+	# so they'll be done when evaluating the first cell's counts, and only then
+	l <- foreach(i=l, f=f, abf=abf, abnf=abnf, .inorder=FALSE, .multicombine=TRUE,
+	.export=c("ggviolin", "ggridge", "ggscatter", "ggdensity2d", "ggdensity2dxor", "ggscatterbyclass"),
+	.packages=c("ggplot2", "ggridges", "grid", "gridExtra", "dplyr")) %dopar% {
+		theme_set(th)
+		g1 <- ggviolin(abf, i, "class")
+		g2 <- ggviolin(abnf, i, "classF")
+		g3 <- ggridge(abf, i, "class")
+		g4 <- ggridge(abnf, i, "classF")
+		g5 <- ggscatter(abf, i, pc1, stt)
+		g6 <- ggscatter(abnf, i, pc1nf, stt)
+		g <- arrangeGrob(grobs=list(g1, g2, g3, g4, g5, g6), ncol=2)
+		ggsave(f, g, width=24, height=20)
+		g <- ggdensity2d(abf, i, pc1)
+		if(!is.null(g)){
+			ggsave(sub("pdf$", "explodedall.pdf", f), g, width=24, height=20)
+			u <- lapply(levels(abf$classc), function(x) ggdensity2dxor(abf, i, pc1, x))
+			u[sapply(u, is.null)] <- NULL
+			if(length(u) != 0){
+				g <- arrangeGrob(grobs=u)
+				ggsave(sub("pdf$", "exploded.pdf", f), g, width=24, height=20)
+			}
+		}
+		g <- ggdensity2d(abnf, i, pc1nf)
+		if(!is.null(g)){
+			ggsave(sub("pdf$", "nfexplodedall.pdf", f), g, width=24, height=20)
+			u <- lapply(levels(abnf$classc), function(x) ggdensity2dxor(abnf, i, pc1nf, x))
+			u[sapply(u, is.null)] <- NULL
+			if(length(u) != 0){
+				g <- arrangeGrob(grobs=u)
+				ggsave(sub("pdf$", "nfexploded.pdf", f), g, width=24, height=20)
+			}
+		}
+		g <- ggscatterbyclass(abf, i, pc1)
+		if(!is.null(g))
+			ggsave(sub("pdf$", "explodedhex.pdf", f), g, width=24, height=20)
+		g <- ggscatterbyclass(abnf, i, pc1nf)
+		if(!is.null(g))
+			ggsave(sub("pdf$", "nfexplodedhex.pdf", f), g, width=24, height=20)
+		print(paste(i, "got through"))
+		TRUE
+	}
+
+	# generate model plots
+	ab <- read.table(paste0("tabs/", cell, ".lm.tsv.gz"), header=TRUE)
+	l <- list.dirs(pref, full.names=FALSE)[-1]
+	f <- paste0(pref, l, "/plot.pdf")
+
+	# only generate missing plots
+	i <- which(file.access(f, 4) != 0)
+	l <- l[i]
+	f <- f[i]
+
+	# slice ab into a list of data.frame with weighted parameters and model fit and error
+	coef <- lapply(l, function(x) read.table(paste0(pref, x, "/coef.tsv"), header=TRUE))
+	abl <- lapply(coef, function(x){
+		x <- x[,1:2]
+		d <- select(ab, eigenvectornf, !!!syms(as.character(x[-1,1])))
+		for(i in 2:ncol(x))
+			d[,i] <- d[,i] * x[i,2]
+		d$fitted <- x[1,2] + rowSums(select(d, -1))
+		d$res <- d$eigenvectornf - d$fitted
+		d
+	})
+
+	# generate plots
+	l <- foreach(ab=abl, f=f, .inorder=FALSE, .multicombine=TRUE,
+	.export=c("ggfit", "ggqnorm"),
+	.packages=c("ggplot2", "grid", "gridExtra", "dplyr")) %dopar% {
+		theme_set(th)
+		g1 <- ggfit(ab, "res", "Model residuals versus fitted values")
+		g2 <- ggfit(ab, "eigenvectornf",
+			"Observed eigenvector values versus fitted values", method="lm")
+		g3 <- ggqnorm(ab)
+		ggsave(f, grid.arrange(g1, g2, g3), width=12, height=11)
+	}
+}
 
 # set global theme options
 th <- theme_classic() +
@@ -175,126 +352,9 @@ th <- theme_classic() +
 	panel.grid.minor=element_line(size=0.25, linetype="solid", colour="#eeeeee"))
 theme_set(th)
 
-# linear models plots
-# get epigenomic and genomic parameter lists
-l <- lapply(c("lm.eparm.tsv", "lm.gparm.tsv"), read.parms)
-# generate correlation heatmap for all parameters
-if(file.access("lm/cor.pdf", 4) != 0){
-	read.table("tabs/lmparmscor.tsv", header=TRUE) %>%
-		ggcor %>%
-		ggsave(filename="lm/cor.pdf", width=24, height=20)
-}
-
-# reorder classes for plots
-l <- levels(ab$class)
-l <- c(l[grep("^A_nogene", l)], l[grep("^A_high", l)], l[grep("^A_normal", l)],
-	l[grep("^B_normal", l)], l[grep("^B_nogene", l)], l[grep("^B_high", l)],
-	l[grep("^NA", l)])
-ab$class <- factor(ab$class, levels=l, ordered=TRUE)
-l <- levels(ab$classF)
-l <- c(l[grep("^A_nogene", l)], l[grep("^A_high", l)], l[grep("^A_normal", l)],
-	l[grep("^B_normal", l)], l[grep("^B_nogene", l)], l[grep("^B_high", l)],
-	l[grep("^NA", l)])
-ab$classF <- factor(ab$classF, levels=l, ordered=TRUE)
-
-# list all parameter names, and split individual repseqs apart, since they will
-# be in their own subdirectory; remove class and eigenvector columns
-l <- colnames(ab)
-l2 <- l[grep("repseq\\.only", l)]
-l <- l[grep("^(NA_|[AB]_|class|HUVEC|IMR90|huvec\\.repseq\\.only)", l, invert=TRUE)]
-# generate filenames for all parameters
-f <- c(paste0("plot/", l, ".pdf"), paste0("plot/repseq/", l2, ".pdf"))
-l <- c(l, l2)
-# only generate missing plots
-i <- which(file.access(f, 4) != 0)
-l <- l[i]
-f <- f[i]
-# generate two data.frames based on which eigenvector we use, then split into
-# sub-data.frames for each parameter; one list will be for raw eigenvector, and
-# one for eigenvector without flanking regions (as defined in tabs.R); we will
-# want to generate plots for both for each parameter; foreach will then take
-# both lists and manage distributing them to workers
-# for both lists, remove values in NA_ classes (erroneous data), and generate
-# anyA/anyB and alwaysA/alwaysB columns for scatterplots
-abf <- ab %>%
-	filter(!grepl("^NA_", class)) %>%
-	mutate(class=droplevels(class),
-		class2=ifelse(grepl("^A_", class), "A", "B"),
-		class3=ifelse(grepl("^A_.*AlwaysA", class), "A",
-			ifelse(grepl("^B_.*AlwaysB", class), "B",
-			NA)),
-		classc=scattersplit(class))
-abf <- lapply(l, function(x){
-	abf %>%
-		select(class, class2, class3, classc, HUVEC, !!sym(x))
-})
-abnf <- ab %>%
-	filter(!grepl("^NA_", classF)) %>%
-	mutate(classF=droplevels(classF),
-		class2=ifelse(grepl("^A_", classF), "A", "B"),
-		class3=ifelse(grepl("^A_.*AlwaysA", classF), "A",
-			ifelse(grepl("^B_.*AlwaysB", classF), "B",
-			NA)),
-		classc=scattersplit(classF))
-abnf <- lapply(l, function(x){
-	abnf %>%
-		select(classF, class2, class3, classc, HUVECnoflank, !!sym(x))
-})
 nc <- detectCores()
 cl <- makeCluster(nc)
 registerDoParallel(cl)
-l <- foreach(i=l, f=f, abf=abf, abnf=abnf, .inorder=FALSE, .multicombine=TRUE, .packages=c("ggplot2", "ggridges", "grid", "gridExtra", "dplyr")) %dopar% {
-	theme_set(th)
-	g1 <- ggviolin(abf, i, "class")
-	g2 <- ggviolin(abnf, i, "classF")
-	g3 <- ggridge(abf, i, "class")
-	g4 <- ggridge(abnf, i, "classF")
-	g5 <- ggscatter(abf, i, "HUVEC")
-	g6 <- ggscatter(abnf, i, "HUVECnoflank")
-	g <- grid.arrange(g1, g2, g3, g4, g5, g6)
-	ggsave(f, g, width=24, height=20)
-	g7 <- ggdensity2d(abf, i, "HUVEC")
-	if(!is.null(g7)){
-		u <- lapply(levels(abf$classc), function(x) ggdensity2dxor(abf, i, "HUVEC", x))
-		g <- grid.arrange(g7, u[[1]], u[[2]], u[[3]], u[[4]], u[[5]], u[[6]], u[[7]],
-			u[[8]], u[[9]], u[[10]], u[[11]])
-		ggsave(sub("pdf$", "exploded.pdf", f), g, width=24, height=20)
-	}
-	g8 <- ggdensity2d(abnf, i, "HUVECnoflank")
-	if(!is.null(g8)){
-		v <- lapply(levels(abnf$classc), function(x) ggdensity2dxor(abnf, i, "HUVECnoflank", x))
-		g <- grid.arrange(g8, v[[1]], v[[2]], v[[3]], v[[4]], v[[5]], v[[6]], v[[7]],
-			v[[8]], v[[9]], v[[10]], v[[11]])
-		ggsave(sub("pdf$", "nfexploded.pdf", f), g, width=24, height=20)
-	}
-}
-
-# generate model plots
-ab <- read.table("tabs/lmparms.tsv.gz", header=TRUE)
-l <- list.dirs("lm", full.names=FALSE)[-1]
-f <- paste0("lm/", l, "/plot.pdf")
-# only generate missing plots
-i <- which(file.access(f, 4) != 0)
-l <- l[i]
-f <- f[i]
-# slice ab into a list of data.frame with weighted parameters and model fit and error
-coef <- lapply(l, function(x) read.table(paste0("lm/", x, "/coef.tsv"), header=TRUE))
-abl <- lapply(coef, function(x){
-	x <- x[,1:2]
-	d <- select(ab, eigenvectornf, !!!syms(as.character(x[-1,1])))
-	for(i in 2:ncol(x))
-		d[,i] <- d[,i] * x[i,2]
-	d$fitted <- x[1,2] + rowSums(select(d, -1))
-	d$res <- d$eigenvectornf - d$fitted
-	d
-})
-# generate plots
-l <- foreach(ab=abl, f=f, .inorder=FALSE, .multicombine=TRUE, .packages=c("ggplot2", "grid", "gridExtra", "dplyr")) %dopar% {
-	theme_set(th)
-	g1 <- ggfit(ab, "res", "Model residuals versus fitted values")
-	g2 <- ggfit(ab, "eigenvectornf",
-		"Observed eigenvector values versus fitted values", method="lm")
-	g3 <- ggqnorm(ab)
-	ggsave(f, grid.arrange(g1, g2, g3), width=24, height=20)
-}
+mkplots(th, "huvec", "HUVEC", "HUVECnoflank")
+mkplots(th, "gm12878", "GM12878", "GM12878noflank")
 stopCluster(cl)

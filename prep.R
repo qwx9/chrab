@@ -1,6 +1,7 @@
 # data extraction, conversions and other transformations prior to counting
 suppressPackageStartupMessages({
 library(dplyr)
+library(tidyr)
 library(doParallel)
 library(readxl)
 })
@@ -420,9 +421,21 @@ mkrepseq <- function(){
 	repmask <- read.table("hg19/hg19.fa.out.gz", skip=2) %>%
 		select(chr=V5, start=V6, end=V7, id=V10)
 	repcor <- read.table("prep/hg19.repseq.tsv", header=TRUE)
+
+	# curated protosilencers
 	psilprob <- read_xlsx("gf/List.pour.KONST-6sept2020.xlsx", col_types="text",
 		.name_repair=~gsub(" ", "_", .x)) %>%
 		select(Name=1)
+
+	# correlated and enriched sequences, for A and B compartments and TE/nonTE
+	xa <- read_xlsx("gf/LISTs.pour KONST.-27aout2020bis.xlsx", sheet=1, col_types="text", .name_repair=~gsub(" ", "_", .x)) %>%
+		select(1, 4, 7) %>%
+		pivot_longer(cols=everything(), names_to="type", values_to="Name")
+	xb <- read_xlsx("gf/LISTs.pour KONST.-27aout2020bis.xlsx", sheet=2, col_types="text", .name_repair=~gsub(" ", "_", .x)) %>%
+		select(1, 4, 7) %>%
+		pivot_longer(cols=everything(), names_to="type", values_to="Name")
+	enriched <- rbind(xa, xb)
+
 	# yes, this is not really a table and column names are all screwed up
 	suppressWarnings(
 		ebv <- read_xlsx("gf/listes.EBV(LTR)-transmis.26dec2019.xlsx", col_types="text") %>%
@@ -453,7 +466,13 @@ mkrepseq <- function(){
 		list(f="prep/hg19.repseq.proa.nonte.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01 & Class %in% c("tRNA", "snRNA", "Simple_repeat", "scRNA", "Satellite", "rRNA", "Low_complexity")))),
 		list(f="prep/hg19.repseq.trna.bed.gz", q=quote(repcor %>% filter(Class == "tRNA"))),
 		list(f="prep/hg19.repseq.proa.alu.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01 & Family == "Alu"))),
-		list(f="prep/hg19.repseq.proa.nonalu.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01 & Family != "Alu")))
+		list(f="prep/hg19.repseq.proa.nonalu.bed.gz", q=quote(repcor %>% filter(Moyenne_corA >= 0.01 & Family != "Alu"))),
+		list(f="prep/hg19.repseq.proa.enriched.bed.gz", q=quote(enriched %>% filter(type == "corrA.EnrichA"))),
+		list(f="prep/hg19.repseq.proa.enriched.te.bed.gz", q=quote(enriched %>% filter(type == "corrA.EnrichA_,TE"))),
+		list(f="prep/hg19.repseq.proa.enriched.nonte.bed.gz", q=quote(enriched %>% filter(type == "corrA.EnrichA_,NonTE"))),
+		list(f="prep/hg19.repseq.prob.enriched.bed.gz", q=quote(enriched %>% filter(type == "corrB.EnrichB"))),
+		list(f="prep/hg19.repseq.prob.enriched.te.bed.gz", q=quote(enriched %>% filter(type == "corrB.EnrichB,_TE"))),
+		list(f="prep/hg19.repseq.prob.enriched.nonte.bed.gz", q=quote(enriched %>% filter(type == "corrB.EnrichB,_NonTE")))
 	)
 	f <- paste0("prep/repseq/hg19.repseq.only.",
 		gsub("\\(|\\)", "", gsub("/", "-", repcor$Name)), ".bed.gz")

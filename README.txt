@@ -26,6 +26,7 @@ A certain number of input files are necessary to run the analysis, and must be a
 
 gf/Kassiotis-List.ORI.RepSeq.CorrB-Fourel.11july.xlsx: RepBase repeat counts in hg19 and correlation to A/B profile
 gf/Table-AouBouAlways.xlsx: A/B profile for several cell lines
+gf/LISTs.pour KONST.-27aout2020bis.xlsx: lists of enriched and correlated protosilencers
 gf/List.pour.KONST-6sept2020.xlsx: Experimental lists of strong protosilencers
 gf/listes.EBV\(LTR\)-transmis.26dec2019.xlsx: Experimental lists of EBV induced LTRs
 

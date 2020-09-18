@@ -285,25 +285,25 @@ mkplots <- function(th, cell, pc1, pc1nf){
 		g <- arrangeGrob(grobs=list(g1, g2, g3, g4, g5, g6), ncol=2)
 		ggsave(f, g, width=24, height=20)
 		# FIXME: these plots make no sense now
-		g <- ggdensity2d(abf, i, pc1)
-		if(!is.null(g)){
-			# extract range of density plot
-			rx <- ggplot_build(g)$layout$panel_scales_x[[1]]$range$range
-			u <- lapply(levels(abf$classc), function(x) ggdensity2dxor(abf, i, pc1, x, rx))
-			u[sapply(u, is.null)] <- NULL
-			u[[length(u)+1]] <- g
-			gl <- arrangeGrob(grobs=u)
-			ggsave(sub("pdf$", "exploded.pdf", f), gl, width=24, height=20)
-		}
-		g <- ggdensity2d(abnf, i, pc1nf)
-		if(!is.null(g)){
-			rx <- ggplot_build(g)$layout$panel_scales_x[[1]]$range$range
-			u <- lapply(levels(abnf$classc), function(x) ggdensity2dxor(abnf, i, pc1nf, x, rx))
-			u[sapply(u, is.null)] <- NULL
-			u[[length(u)+1]] <- g
-			gl <- arrangeGrob(grobs=u)
-			ggsave(sub("pdf$", "explodednf.pdf", f), gl, width=24, height=20)
-		}
+#		g <- ggdensity2d(abf, i, pc1)
+#		if(!is.null(g)){
+#			# extract range of density plot
+#			rx <- ggplot_build(g)$layout$panel_scales_x[[1]]$range$range
+#			u <- lapply(levels(abf$classc), function(x) ggdensity2dxor(abf, i, pc1, x, rx))
+#			u[sapply(u, is.null)] <- NULL
+#			u[[length(u)+1]] <- g
+#			gl <- arrangeGrob(grobs=u)
+#			ggsave(sub("pdf$", "exploded.pdf", f), gl, width=24, height=20)
+#		}
+#		g <- ggdensity2d(abnf, i, pc1nf)
+#		if(!is.null(g)){
+#			rx <- ggplot_build(g)$layout$panel_scales_x[[1]]$range$range
+#			u <- lapply(levels(abnf$classc), function(x) ggdensity2dxor(abnf, i, pc1nf, x, rx))
+#			u[sapply(u, is.null)] <- NULL
+#			u[[length(u)+1]] <- g
+#			gl <- arrangeGrob(grobs=u)
+#			ggsave(sub("pdf$", "explodednf.pdf", f), gl, width=24, height=20)
+#		}
 		g <- ggscatterbyclass(abf, i, pc1)
 		if(!is.null(g))
 			ggsave(sub("pdf$", "explodedhex.pdf", f), g, width=24, height=20)

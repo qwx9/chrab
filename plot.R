@@ -141,7 +141,9 @@ ggdensity2d <- function(ab, var, pc1){
 	# which subtracts 3rd quantile from 1st for a bandwidth estimate.
 	# this obviously fails if we have too many 0 counts.
 	z <- sapply(seq_along(levels(ab$classc)), function(i){
-		if(quantile(ab[ab$classc==levels(ab$classc)[i],var], 0.5) == 0
+		if(typeof(ab[,var]) == "integer"
+		&& quantile(ab[ab$classc==levels(ab$classc)[i],var], 0.75) <= 1
+		|| IQR(ab[,var]) == 0
 		|| MASS::bandwidth.nrd(ab[ab$classc == levels(ab$classc)[i],var]) == 0)
 			levels(ab$classc)[i]
 		else
@@ -157,12 +159,13 @@ ggdensity2d <- function(ab, var, pc1){
 		scale_color_brewer(name="subclasses", palette="Paired", aesthetics=c("fill", "color"))
 }
 
-ggdensity2dxor <- function(ab, var, pc1, name){
-	if(quantile(ab[,var], 0.5) == 0
-	|| quantile(ab[ab$classc == name,var], 0.5) == 0
+ggdensity2dxor <- function(ab, var, pc1, name, rx){
+	if(typeof(ab[,var]) == "integer"
+	&& quantile(ab[ab$classc == name,var], 0.5) <= 1
+	&& IQR(ab[ab$classc == name,var]) <= 2
+	|| IQR(ab[,var]) == 0
 	|| MASS::bandwidth.nrd(ab[ab$classc == name,var]) == 0)
 		return(NULL)
-	rx <- range(ab[,var])
 	ry <- range(ab[,pc1])
 	ggplot(mapping=aes(!!sym(var), !!sym(pc1))) +
 		stat_density_2d(data=ab, geom="polygon", alpha=0.05, color="grey", fill="grey", na.rm=TRUE) +
@@ -281,33 +284,32 @@ mkplots <- function(th, cell, pc1, pc1nf){
 		g6 <- ggscatter(abnf, i, pc1nf, stt)
 		g <- arrangeGrob(grobs=list(g1, g2, g3, g4, g5, g6), ncol=2)
 		ggsave(f, g, width=24, height=20)
+		# FIXME: these plots make no sense now
 		g <- ggdensity2d(abf, i, pc1)
 		if(!is.null(g)){
-			ggsave(sub("pdf$", "explodedall.pdf", f), g, width=24, height=20)
-			u <- lapply(levels(abf$classc), function(x) ggdensity2dxor(abf, i, pc1, x))
+			# extract range of density plot
+			rx <- ggplot_build(g)$layout$panel_scales_x[[1]]$range$range
+			u <- lapply(levels(abf$classc), function(x) ggdensity2dxor(abf, i, pc1, x, rx))
 			u[sapply(u, is.null)] <- NULL
-			if(length(u) != 0){
-				g <- arrangeGrob(grobs=u)
-				ggsave(sub("pdf$", "exploded.pdf", f), g, width=24, height=20)
-			}
+			u[[length(u)+1]] <- g
+			gl <- arrangeGrob(grobs=u)
+			ggsave(sub("pdf$", "exploded.pdf", f), gl, width=24, height=20)
 		}
 		g <- ggdensity2d(abnf, i, pc1nf)
 		if(!is.null(g)){
-			ggsave(sub("pdf$", "nfexplodedall.pdf", f), g, width=24, height=20)
-			u <- lapply(levels(abnf$classc), function(x) ggdensity2dxor(abnf, i, pc1nf, x))
+			rx <- ggplot_build(g)$layout$panel_scales_x[[1]]$range$range
+			u <- lapply(levels(abnf$classc), function(x) ggdensity2dxor(abnf, i, pc1nf, x, rx))
 			u[sapply(u, is.null)] <- NULL
-			if(length(u) != 0){
-				g <- arrangeGrob(grobs=u)
-				ggsave(sub("pdf$", "nfexploded.pdf", f), g, width=24, height=20)
-			}
+			u[[length(u)+1]] <- g
+			gl <- arrangeGrob(grobs=u)
+			ggsave(sub("pdf$", "explodednf.pdf", f), gl, width=24, height=20)
 		}
 		g <- ggscatterbyclass(abf, i, pc1)
 		if(!is.null(g))
 			ggsave(sub("pdf$", "explodedhex.pdf", f), g, width=24, height=20)
 		g <- ggscatterbyclass(abnf, i, pc1nf)
 		if(!is.null(g))
-			ggsave(sub("pdf$", "nfexplodedhex.pdf", f), g, width=24, height=20)
-		print(paste(i, "got through"))
+			ggsave(sub("pdf$", "explodedhexnf.pdf", f), g, width=24, height=20)
 		TRUE
 	}
 
